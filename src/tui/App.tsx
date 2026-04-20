@@ -1,15 +1,27 @@
 import { TextInput } from "@inkjs/ui";
-import { Box, Static, Text } from "ink";
+import { Box, Static, Text, useApp, useInput } from "ink";
 import { useState } from "react";
+import { isExitCommand } from "./commands.ts";
 
-type TranscriptItem = { kind: "header" } | { kind: "you"; id: number; content: string };
+type TranscriptItem = { kind: "header" } | { kind: "user"; id: number; content: string };
 
 export function App() {
+  const { exit } = useApp();
   const [history, setHistory] = useState<TranscriptItem[]>([{ kind: "header" }]);
   const [inputKey, setInputKey] = useState(0);
 
+  useInput((input, key) => {
+    if (key.ctrl && input === "c") {
+      exit();
+    }
+  });
+
   const handleSubmit = (value: string) => {
-    setHistory((prev) => [...prev, { kind: "you", id: prev.length, content: value }]);
+    if (isExitCommand(value)) {
+      exit();
+      return;
+    }
+    setHistory((prev) => [...prev, { kind: "user", id: prev.length, content: value }]);
     setInputKey((k) => k + 1);
   };
 
@@ -25,7 +37,7 @@ export function App() {
             );
           }
           return (
-            <Box key={`you-${item.id}`} flexDirection="column" marginTop={1}>
+            <Box key={`user-${item.id}`} flexDirection="column" marginTop={1}>
               <Text bold color="cyan">
                 you
               </Text>
