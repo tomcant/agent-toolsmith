@@ -1,0 +1,30 @@
+[[repos]]
+repo = "local"
+hooks = [
+  {
+    id = "format",
+    name = "format",
+    language = "system",
+    pass_filenames = false,
+    files = { glob = [ "*.ts", "*.json" ] },
+    entry = "bun format:check",
+    priority = 10,
+  },
+  {
+    id = "lint",
+    name = "lint",
+    language = "system",
+    pass_filenames = false,
+    files = { glob = [ "*.ts", "*.json" ] },
+    entry = "bun lint",
+    priority = 20,
+  },
+  {
+    id = "test",
+    name = "test",
+    language = "system",
+    pass_filenames = false,
+    entry = "bun test",
+    priority = 30,
+  },
+]
