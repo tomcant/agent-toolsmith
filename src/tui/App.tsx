@@ -7,7 +7,8 @@ import { isExitCommand } from "./commands.ts";
 type TranscriptItem =
   | { kind: "header" }
   | { kind: "user"; id: number; content: string }
-  | { kind: "assistant"; id: number; content: string };
+  | { kind: "assistant"; id: number; content: string }
+  | { kind: "error"; id: number; content: string };
 
 type AppProps = {
   agent: Agent;
@@ -35,9 +36,17 @@ export function App({ agent }: AppProps) {
     setInputKey((k) => k + 1);
     setBusy(true);
 
-    const reply = await agent.turn(value);
+    let kind: "assistant" | "error";
+    let content: string;
+    try {
+      content = await agent.turn(value);
+      kind = "assistant";
+    } catch (err) {
+      content = err instanceof Error ? err.message : String(err);
+      kind = "error";
+    }
 
-    setHistory((prev) => [...prev, { kind: "assistant", id: prev.length, content: reply }]);
+    setHistory((prev) => [...prev, { kind, id: prev.length, content }]);
     setBusy(false);
   };
 
@@ -52,14 +61,13 @@ export function App({ agent }: AppProps) {
               </Text>
             );
           }
-          const label = item.kind === "user" ? "you" : "agent";
-          const color = item.kind === "user" ? "cyan" : "green";
+          const { label, color } = labelFor(item.kind);
           return (
             <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
               <Text bold color={color}>
                 {label}
               </Text>
-              <Text>{item.content}</Text>
+              <Text color={item.kind === "error" ? "red" : undefined}>{item.content}</Text>
             </Box>
           );
         }}
@@ -80,4 +88,10 @@ export function App({ agent }: AppProps) {
       </Box>
     </Box>
   );
+}
+
+function labelFor(kind: "user" | "assistant" | "error"): { label: string; color: string } {
+  if (kind === "user") return { label: "you", color: "cyan" };
+  if (kind === "assistant") return { label: "agent", color: "green" };
+  return { label: "error", color: "red" };
 }
