@@ -1,4 +1,4 @@
-import { TextInput } from "@inkjs/ui";
+import { Spinner, TextInput } from "@inkjs/ui";
 import { Box, Static, Text, useApp, useInput } from "ink";
 import { useState } from "react";
 import type { Agent } from "#/agent/agent.ts";
@@ -64,6 +64,11 @@ export function App({ agent }: AppProps) {
           );
         }}
       </Static>
+      {busy && (
+        <Box marginTop={1}>
+          <Spinner label="Thinking..." />
+        </Box>
+      )}
       <Box marginTop={1}>
         <Text color="cyan">❯ </Text>
         <TextInput
