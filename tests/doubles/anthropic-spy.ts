@@ -1,7 +1,10 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Message } from "#/llm/client.ts";
 
-export type CreateArgs = { model: string; max_tokens: number; messages: Message[] };
+export type CreateArgs = {
+  model: string;
+  max_tokens: number;
+  messages: Anthropic.MessageParam[];
+};
 
 type ContentBlock = { type: string; [key: string]: unknown };
 export type SpyReply = string | ContentBlock[] | Error;
@@ -23,6 +26,7 @@ export class AnthropicSpy {
 
           return Promise.resolve({
             content: typeof next === "string" ? [{ type: "text", text: next }] : (next ?? []),
+            stop_reason: "end_turn",
           });
         },
       },

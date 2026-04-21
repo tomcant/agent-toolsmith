@@ -1,6 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-
-export type Message = { role: "user" | "assistant"; content: string };
+import type { Message } from "./types.ts";
 
 export class LlmClient {
   constructor(
@@ -8,16 +7,18 @@ export class LlmClient {
     private readonly model: string,
   ) {}
 
-  async send(messages: Message[]): Promise<string> {
+  async send(messages: Message[]): Promise<Message> {
     const response = await this.sdk.messages.create({
       model: this.model,
       max_tokens: 8192,
       messages,
     });
 
-    return response.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("");
+    return {
+      role: "assistant",
+      content: response.content.flatMap((block) =>
+        block.type === "text" ? [{ type: "text" as const, text: block.text }] : [],
+      ),
+    };
   }
 }

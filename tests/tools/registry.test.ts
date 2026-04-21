@@ -21,7 +21,7 @@ describe("ToolRegistry", () => {
     expect(registry.get("some-tool")).toBe(someTool);
   });
 
-  test("list returns every registered tool", () => {
+  test("lists all registered tools", () => {
     const registry = new ToolRegistry();
     const someTool = makeTool("some-tool");
     const anotherTool = makeTool("another-tool");
