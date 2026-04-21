@@ -1,7 +1,7 @@
 import { TextInput } from "@inkjs/ui";
 import { Box, Static, Text, useApp, useInput } from "ink";
 import { useState } from "react";
-import type { LlmClient } from "../llm/client.ts";
+import type { Agent } from "#/agent/agent.ts";
 import { isExitCommand } from "./commands.ts";
 
 type TranscriptItem =
@@ -10,10 +10,10 @@ type TranscriptItem =
   | { kind: "assistant"; id: number; content: string };
 
 type AppProps = {
-  client: LlmClient;
+  agent: Agent;
 };
 
-export function App({ client }: AppProps) {
+export function App({ agent }: AppProps) {
   const { exit } = useApp();
   const [history, setHistory] = useState<TranscriptItem[]>([{ kind: "header" }]);
   const [inputKey, setInputKey] = useState(0);
@@ -35,7 +35,7 @@ export function App({ client }: AppProps) {
     setInputKey((k) => k + 1);
     setBusy(true);
 
-    const reply = await client.send([{ role: "user", content: value }]);
+    const reply = await agent.turn(value);
 
     setHistory((prev) => [...prev, { kind: "assistant", id: prev.length, content: reply }]);
     setBusy(false);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isExitCommand } from "../src/tui/commands.ts";
+import { isExitCommand } from "#/tui/commands.ts";
 
 describe("exit slash-commands", () => {
   test("/exit and /quit signal that the user wants to leave", () => {
