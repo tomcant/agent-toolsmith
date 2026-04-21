@@ -1,5 +1,7 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { render } from "ink";
 import { createElement } from "react";
+import { LlmClient } from "./llm/client.ts";
 import { App } from "./tui/App.tsx";
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -7,5 +9,8 @@ if (!process.env.ANTHROPIC_API_KEY) {
   process.exit(1);
 }
 
-const { waitUntilExit } = render(createElement(App));
+const model = process.env.MODEL ?? "claude-sonnet-4-6";
+const client = new LlmClient(new Anthropic(), model);
+
+const { waitUntilExit } = render(createElement(App, { client }));
 await waitUntilExit();

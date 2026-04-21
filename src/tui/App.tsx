@@ -1,14 +1,23 @@
 import { TextInput } from "@inkjs/ui";
 import { Box, Static, Text, useApp, useInput } from "ink";
 import { useState } from "react";
+import type { LlmClient } from "../llm/client.ts";
 import { isExitCommand } from "./commands.ts";
 
-type TranscriptItem = { kind: "header" } | { kind: "user"; id: number; content: string };
+type TranscriptItem =
+  | { kind: "header" }
+  | { kind: "user"; id: number; content: string }
+  | { kind: "assistant"; id: number; content: string };
 
-export function App() {
+type AppProps = {
+  client: LlmClient;
+};
+
+export function App({ client }: AppProps) {
   const { exit } = useApp();
   const [history, setHistory] = useState<TranscriptItem[]>([{ kind: "header" }]);
   const [inputKey, setInputKey] = useState(0);
+  const [busy, setBusy] = useState(false);
 
   useInput((input, key) => {
     if (key.ctrl && input === "c") {
@@ -16,13 +25,20 @@ export function App() {
     }
   });
 
-  const handleSubmit = (value: string) => {
+  const handleSubmit = async (value: string) => {
     if (isExitCommand(value)) {
       exit();
       return;
     }
+
     setHistory((prev) => [...prev, { kind: "user", id: prev.length, content: value }]);
     setInputKey((k) => k + 1);
+    setBusy(true);
+
+    const reply = await client.send([{ role: "user", content: value }]);
+
+    setHistory((prev) => [...prev, { kind: "assistant", id: prev.length, content: reply }]);
+    setBusy(false);
   };
 
   return (
@@ -36,10 +52,12 @@ export function App() {
               </Text>
             );
           }
+          const label = item.kind === "user" ? "you" : "agent";
+          const color = item.kind === "user" ? "cyan" : "green";
           return (
-            <Box key={`user-${item.id}`} flexDirection="column" marginTop={1}>
-              <Text bold color="cyan">
-                you
+            <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
+              <Text bold color={color}>
+                {label}
               </Text>
               <Text>{item.content}</Text>
             </Box>
@@ -50,6 +68,7 @@ export function App() {
         <Text color="cyan">❯ </Text>
         <TextInput
           key={inputKey}
+          isDisabled={busy}
           placeholder="Type a message (Ctrl+C or /exit to quit)"
           onSubmit={handleSubmit}
         />
