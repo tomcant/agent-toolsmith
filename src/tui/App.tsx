@@ -120,23 +120,25 @@ function renderItem(item: Exclude<HistoryItem, { kind: "header" }>) {
       );
     case "tool_call":
       return (
-        <>
-          <Text bold color="yellow">
-            tool
-          </Text>
-          <Text>
-            {item.name}({JSON.stringify(item.input)})
-          </Text>
-        </>
+        <Text>
+          <Text color="gray">⚙ </Text>
+          {item.name}({JSON.stringify(item.input)})
+        </Text>
       );
     case "tool_result":
-      return (
-        <>
-          <Text bold color={item.is_error ? "red" : "yellow"}>
-            result
+      if (item.is_error) {
+        return (
+          <Text color="red">
+            <Text color="red">✗ </Text>
+            {truncate(item.content, 120)}
           </Text>
-          <Text color={item.is_error ? "red" : undefined}>{item.content}</Text>
-        </>
+        );
+      }
+      return (
+        <Text>
+          <Text color="green">→ </Text>
+          {truncate(item.content, 120)}
+        </Text>
       );
     case "error":
       return (
@@ -148,4 +150,8 @@ function renderItem(item: Exclude<HistoryItem, { kind: "header" }>) {
         </>
       );
   }
+}
+
+function truncate(content: string, max: number): string {
+  return content.length > max ? `${content.slice(0, max)}…` : content;
 }
