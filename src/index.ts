@@ -3,6 +3,7 @@ import { render } from "ink";
 import { createElement } from "react";
 import { Agent } from "./agent/agent.ts";
 import { LlmClient } from "./llm/client.ts";
+import { ToolRegistry } from "./tools/registry.ts";
 import { App } from "./tui/App.tsx";
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -11,7 +12,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
 }
 
 const model = process.env.MODEL ?? "claude-sonnet-4-6";
-const agent = new Agent(new LlmClient(new Anthropic(), model));
+const agent = new Agent(new LlmClient(new Anthropic(), model), new ToolRegistry());
 
 const { waitUntilExit } = render(createElement(App, { agent }));
 await waitUntilExit();

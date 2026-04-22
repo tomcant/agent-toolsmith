@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import type { Tool } from "#/tools/types.ts";
 import type { LlmResponse, Message, MessagePart } from "./types.ts";
 
 export class LlmClient {
@@ -7,12 +8,14 @@ export class LlmClient {
     private readonly model: string,
   ) {}
 
-  async send(messages: Message[], tools?: Anthropic.Tool[]): Promise<LlmResponse> {
+  async send(messages: Message[], tools?: Tool[]): Promise<LlmResponse> {
     const response = await this.sdk.messages.create({
       model: this.model,
       max_tokens: 8192,
       messages,
-      ...(tools && tools.length > 0 ? { tools } : {}),
+      ...(tools && tools.length > 0
+        ? { tools: tools.map(({ execute, ...sdkTool }) => sdkTool) }
+        : {}),
     });
 
     const content = response.content.flatMap((block): MessagePart[] => {

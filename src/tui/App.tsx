@@ -2,12 +2,15 @@ import { Spinner, TextInput } from "@inkjs/ui";
 import { Box, Static, Text, useApp, useInput } from "ink";
 import { useState } from "react";
 import type { Agent } from "#/agent/agent.ts";
+import type { AgentEvent } from "#/agent/types.ts";
 import { isExitCommand } from "./commands.ts";
 
-type TranscriptItem =
+type HistoryItem =
   | { kind: "header" }
   | { kind: "user"; id: number; content: string }
   | { kind: "assistant"; id: number; content: string }
+  | { kind: "tool_call"; id: number; name: string; input: unknown }
+  | { kind: "tool_result"; id: number; content: string; is_error: boolean }
   | { kind: "error"; id: number; content: string };
 
 type AppProps = {
@@ -16,7 +19,7 @@ type AppProps = {
 
 export function App({ agent }: AppProps) {
   const { exit } = useApp();
-  const [history, setHistory] = useState<TranscriptItem[]>([{ kind: "header" }]);
+  const [history, setHistory] = useState<HistoryItem[]>([{ kind: "header" }]);
   const [inputKey, setInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -36,17 +39,15 @@ export function App({ agent }: AppProps) {
     setInputKey((k) => k + 1);
     setBusy(true);
 
-    let kind: "assistant" | "error";
-    let content: string;
     try {
-      content = await agent.turn(value);
-      kind = "assistant";
+      for await (const event of agent.turn(value)) {
+        setHistory((prev) => [...prev, eventToItem(event, prev.length)]);
+      }
     } catch (err) {
-      content = err instanceof Error ? err.message : String(err);
-      kind = "error";
+      const content = err instanceof Error ? err.message : String(err);
+      setHistory((prev) => [...prev, { kind: "error", id: prev.length, content }]);
     }
 
-    setHistory((prev) => [...prev, { kind, id: prev.length, content }]);
     setBusy(false);
   };
 
@@ -61,13 +62,9 @@ export function App({ agent }: AppProps) {
               </Text>
             );
           }
-          const { label, color } = labelFor(item.kind);
           return (
             <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
-              <Text bold color={color}>
-                {label}
-              </Text>
-              <Text color={item.kind === "error" ? "red" : undefined}>{item.content}</Text>
+              {renderItem(item)}
             </Box>
           );
         }}
@@ -90,8 +87,65 @@ export function App({ agent }: AppProps) {
   );
 }
 
-function labelFor(kind: "user" | "assistant" | "error"): { label: string; color: string } {
-  if (kind === "user") return { label: "you", color: "cyan" };
-  if (kind === "assistant") return { label: "agent", color: "green" };
-  return { label: "error", color: "red" };
+function eventToItem(event: AgentEvent, id: number): HistoryItem {
+  switch (event.type) {
+    case "text":
+      return { kind: "assistant", id, content: event.text };
+    case "tool_call":
+      return { kind: "tool_call", id, name: event.name, input: event.input };
+    case "tool_result":
+      return { kind: "tool_result", id, content: event.content, is_error: event.is_error };
+  }
+}
+
+function renderItem(item: Exclude<HistoryItem, { kind: "header" }>) {
+  switch (item.kind) {
+    case "user":
+      return (
+        <>
+          <Text bold color="cyan">
+            you
+          </Text>
+          <Text>{item.content}</Text>
+        </>
+      );
+    case "assistant":
+      return (
+        <>
+          <Text bold color="green">
+            agent
+          </Text>
+          <Text>{item.content}</Text>
+        </>
+      );
+    case "tool_call":
+      return (
+        <>
+          <Text bold color="yellow">
+            tool
+          </Text>
+          <Text>
+            {item.name}({JSON.stringify(item.input)})
+          </Text>
+        </>
+      );
+    case "tool_result":
+      return (
+        <>
+          <Text bold color={item.is_error ? "red" : "yellow"}>
+            result
+          </Text>
+          <Text color={item.is_error ? "red" : undefined}>{item.content}</Text>
+        </>
+      );
+    case "error":
+      return (
+        <>
+          <Text bold color="red">
+            error
+          </Text>
+          <Text color="red">{item.content}</Text>
+        </>
+      );
+  }
 }

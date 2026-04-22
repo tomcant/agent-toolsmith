@@ -1,6 +1,6 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, test } from "bun:test";
 import { LlmClient } from "#/llm/client.ts";
+import type { Tool } from "#/tools/types.ts";
 import { AnthropicSpy } from "../doubles/anthropic-spy.ts";
 
 describe("LlmClient", () => {
@@ -18,7 +18,9 @@ describe("LlmClient", () => {
     ]);
     const client = new LlmClient(anthropic.sdk, "model");
 
-    const reply = await client.send([{ role: "user", content: [{ type: "text", text: "Hello" }] }]);
+    const reply = await client.send([
+      { role: "user", content: [{ type: "text", text: "User message" }] },
+    ]);
 
     expect(reply).toEqual({
       message: {
@@ -37,7 +39,9 @@ describe("LlmClient", () => {
     const anthropic = new AnthropicSpy([new Error("error")]);
     const client = new LlmClient(anthropic.sdk, "model");
 
-    const attempt = client.send([{ role: "user", content: [{ type: "text", text: "Hello" }] }]);
+    const attempt = client.send([
+      { role: "user", content: [{ type: "text", text: "User message" }] },
+    ]);
 
     await expect(attempt).rejects.toThrow("error");
   });
@@ -45,16 +49,23 @@ describe("LlmClient", () => {
   test("forwards the model, messages, and tools to the SDK", async () => {
     const anthropic = new AnthropicSpy();
     const client = new LlmClient(anthropic.sdk, "claude-test-model");
-    const tools: Anthropic.Tool[] = [
-      { name: "tool-name", description: "description", input_schema: { type: "object" } },
+    const tools: Tool[] = [
+      {
+        name: "tool-name",
+        description: "description",
+        input_schema: { type: "object" },
+        execute: async () => "",
+      },
     ];
 
-    await client.send([{ role: "user", content: [{ type: "text", text: "Hello" }] }], tools);
+    await client.send([{ role: "user", content: [{ type: "text", text: "User message" }] }], tools);
 
     expect(anthropic.calls[0]?.model).toBe("claude-test-model");
     expect(anthropic.calls[0]?.messages).toEqual([
-      { role: "user", content: [{ type: "text", text: "Hello" }] },
+      { role: "user", content: [{ type: "text", text: "User message" }] },
     ]);
-    expect(anthropic.calls[0]?.tools).toEqual(tools);
+    expect(anthropic.calls[0]?.tools).toEqual([
+      { name: "tool-name", description: "description", input_schema: { type: "object" } },
+    ]);
   });
 });

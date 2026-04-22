@@ -21,7 +21,7 @@ export class AnthropicSpy {
     this.sdk = {
       messages: {
         create: (body: CreateArgs) => {
-          this.calls.push(body);
+          this.calls.push({ ...body, messages: [...body.messages] });
 
           const next = replies[replyIndex++];
 
