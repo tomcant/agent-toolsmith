@@ -20,12 +20,15 @@ describe("Agent", () => {
 
   test("concatenates text blocks in the response into a single reply", async () => {
     const anthropic = new AnthropicSpy([
-      [
-        { type: "thinking", thinking: "Reasoning..." },
-        { type: "text", text: "Hello, " },
-        { type: "tool_use", id: "t1", name: "tool", input: {} },
-        { type: "text", text: "Tom." },
-      ],
+      {
+        content: [
+          { type: "thinking", thinking: "Reasoning..." },
+          { type: "text", text: "Hello, " },
+          { type: "tool_use", id: "t1", name: "tool-name", input: {} },
+          { type: "text", text: "Tom." },
+        ],
+        stop_reason: "end_turn",
+      },
     ]);
     const agent = new Agent(new LlmClient(anthropic.sdk, "model"));
 

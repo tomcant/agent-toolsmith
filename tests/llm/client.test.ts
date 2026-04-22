@@ -1,25 +1,35 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, test } from "bun:test";
 import { LlmClient } from "#/llm/client.ts";
 import { AnthropicSpy } from "../doubles/anthropic-spy.ts";
 
 describe("LlmClient", () => {
-  test("returns the assistant's reply as a message", async () => {
+  test("translates the SDK response into a message with a stop reason", async () => {
     const anthropic = new AnthropicSpy([
-      [
-        { type: "text", text: "Hello, " },
-        { type: "text", text: "Tom." },
-      ],
+      {
+        content: [
+          { type: "text", text: "Hello, " },
+          { type: "thinking", thinking: "Reasoning..." },
+          { type: "tool_use", id: "t1", name: "tool-name", input: {} },
+          { type: "text", text: "Tom." },
+        ],
+        stop_reason: "tool_use",
+      },
     ]);
     const client = new LlmClient(anthropic.sdk, "model");
 
     const reply = await client.send([{ role: "user", content: [{ type: "text", text: "Hello" }] }]);
 
     expect(reply).toEqual({
-      role: "assistant",
-      content: [
-        { type: "text", text: "Hello, " },
-        { type: "text", text: "Tom." },
-      ],
+      message: {
+        role: "assistant",
+        content: [
+          { type: "text", text: "Hello, " },
+          { type: "tool_use", id: "t1", name: "tool-name", input: {} },
+          { type: "text", text: "Tom." },
+        ],
+      },
+      stop_reason: "tool_use",
     });
   });
 
@@ -32,18 +42,19 @@ describe("LlmClient", () => {
     await expect(attempt).rejects.toThrow("error");
   });
 
-  test("sends the configured model, token cap, and messages to the SDK", async () => {
-    const anthropic = new AnthropicSpy(["ok"]);
+  test("forwards the model, messages, and tools to the SDK", async () => {
+    const anthropic = new AnthropicSpy();
     const client = new LlmClient(anthropic.sdk, "claude-test-model");
+    const tools: Anthropic.Tool[] = [
+      { name: "tool-name", description: "description", input_schema: { type: "object" } },
+    ];
 
-    await client.send([{ role: "user", content: [{ type: "text", text: "Hello" }] }]);
+    await client.send([{ role: "user", content: [{ type: "text", text: "Hello" }] }], tools);
 
-    expect(anthropic.calls).toEqual([
-      {
-        model: "claude-test-model",
-        max_tokens: 8192,
-        messages: [{ role: "user", content: [{ type: "text", text: "Hello" }] }],
-      },
+    expect(anthropic.calls[0]?.model).toBe("claude-test-model");
+    expect(anthropic.calls[0]?.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "Hello" }] },
     ]);
+    expect(anthropic.calls[0]?.tools).toEqual(tools);
   });
 });

@@ -5,7 +5,7 @@ import type { Tool } from "#/tools/types.ts";
 function makeTool(name: string): Tool {
   return {
     name,
-    description: `${name} tool`,
+    description: "description",
     input_schema: { type: "object" },
     execute: async () => name,
   };
@@ -14,11 +14,11 @@ function makeTool(name: string): Tool {
 describe("ToolRegistry", () => {
   test("registered tools can be retrieved by name", () => {
     const registry = new ToolRegistry();
-    const someTool = makeTool("some-tool");
+    const tool = makeTool("tool-name");
 
-    registry.register(someTool);
+    registry.register(tool);
 
-    expect(registry.get("some-tool")).toBe(someTool);
+    expect(registry.get("tool-name")).toBe(tool);
   });
 
   test("lists all registered tools", () => {

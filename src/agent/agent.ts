@@ -11,10 +11,10 @@ export class Agent {
       ...this.conversation,
       { role: "user", content: [{ type: "text", text: input }] },
     ];
-    const response = await this.client.send(next);
-    this.conversation = [...next, response];
+    const { message } = await this.client.send(next);
+    this.conversation = [...next, message];
 
-    return response.content
+    return message.content
       .filter((block) => block.type === "text")
       .map((block) => block.text)
       .join("");

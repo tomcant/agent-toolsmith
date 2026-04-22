@@ -4,10 +4,12 @@ export type CreateArgs = {
   model: string;
   max_tokens: number;
   messages: Anthropic.MessageParam[];
+  tools?: Anthropic.Tool[];
 };
 
+export type SpyReply = string | Error | { content: ContentBlock[]; stop_reason: string };
+
 type ContentBlock = { type: string; [key: string]: unknown };
-export type SpyReply = string | ContentBlock[] | Error;
 
 export class AnthropicSpy {
   readonly sdk: Anthropic;
@@ -22,11 +24,21 @@ export class AnthropicSpy {
           this.calls.push(body);
 
           const next = replies[replyIndex++];
-          if (next instanceof Error) return Promise.reject(next);
+
+          if (next instanceof Error) {
+            return Promise.reject(next);
+          }
+
+          if (typeof next === "string") {
+            return Promise.resolve({
+              content: [{ type: "text", text: next }],
+              stop_reason: "end_turn",
+            });
+          }
 
           return Promise.resolve({
-            content: typeof next === "string" ? [{ type: "text", text: next }] : (next ?? []),
-            stop_reason: "end_turn",
+            content: next?.content ?? [],
+            stop_reason: next?.stop_reason ?? "end_turn",
           });
         },
       },
