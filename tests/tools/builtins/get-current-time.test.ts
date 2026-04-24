@@ -7,11 +7,11 @@ describe("get-current-time tool", () => {
   });
 
   test("returns the current time as an ISO 8601 string", async () => {
-    const now = new Date("2026-04-22T10:30:00.000Z");
+    const now = new Date("2026-04-22T12:00:00.000Z");
     setSystemTime(now);
 
     const result = await getCurrentTime.execute({});
 
-    expect(result).toBe("2026-04-22T10:30:00.000Z");
+    expect(result).toBe("2026-04-22T12:00:00.000Z");
   });
 });

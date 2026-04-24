@@ -6,7 +6,6 @@ import type { AgentEvent } from "#/agent/types.ts";
 import { isExitCommand } from "./commands.ts";
 
 type HistoryItem =
-  | { kind: "header" }
   | { kind: "user"; id: number; content: string }
   | { kind: "assistant"; id: number; content: string }
   | { kind: "tool_call"; id: number; name: string; input: unknown }
@@ -19,7 +18,7 @@ type AppProps = {
 
 export function App({ agent }: AppProps) {
   const { exit } = useApp();
-  const [history, setHistory] = useState<HistoryItem[]>([{ kind: "header" }]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [inputKey, setInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -54,20 +53,11 @@ export function App({ agent }: AppProps) {
   return (
     <Box flexDirection="column">
       <Static items={history}>
-        {(item) => {
-          if (item.kind === "header") {
-            return (
-              <Text key="header" bold color="magenta">
-                Self-Evolving Agent
-              </Text>
-            );
-          }
-          return (
-            <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
-              {renderItem(item)}
-            </Box>
-          );
-        }}
+        {(item) => (
+          <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
+            {renderItem(item)}
+          </Box>
+        )}
       </Static>
       {busy && (
         <Box marginTop={1}>
@@ -98,7 +88,7 @@ function eventToItem(event: AgentEvent, id: number): HistoryItem {
   }
 }
 
-function renderItem(item: Exclude<HistoryItem, { kind: "header" }>) {
+function renderItem(item: HistoryItem) {
   switch (item.kind) {
     case "user":
       return (
