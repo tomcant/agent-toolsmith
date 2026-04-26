@@ -8,6 +8,7 @@ import { LlmClient } from "#/llm/client.ts";
 import { SessionLog } from "#/session/log.ts";
 import { ToolRegistry } from "#/tools/registry.ts";
 import { AnthropicSpy } from "../doubles/anthropic-spy.ts";
+import { makeTool } from "../helpers.ts";
 
 describe("Agent", () => {
   let sessionDir: string;
@@ -39,15 +40,14 @@ describe("Agent", () => {
     ]);
     const registry = new ToolRegistry();
     const inputsReceivedByTool: unknown[] = [];
-    registry.register({
-      name: "tool-name",
-      description: "description",
-      input_schema: { type: "object" },
-      execute: async (input) => {
-        inputsReceivedByTool.push(input);
-        return "result";
-      },
-    });
+    registry.register(
+      makeTool("tool-name", {
+        execute: async (input) => {
+          inputsReceivedByTool.push(input);
+          return "result";
+        },
+      }),
+    );
     const agent = new Agent(new LlmClient(anthropic.sdk, "model"), registry, sessionLog);
 
     const events = await collect(agent.turn("User message"));
@@ -98,14 +98,13 @@ describe("Agent", () => {
       },
     ]);
     const registry = new ToolRegistry();
-    registry.register({
-      name: "tool-name",
-      description: "description",
-      input_schema: { type: "object" },
-      execute: async () => {
-        throw new Error("error");
-      },
-    });
+    registry.register(
+      makeTool("tool-name", {
+        execute: async () => {
+          throw new Error("error");
+        },
+      }),
+    );
     const agent = new Agent(new LlmClient(anthropic.sdk, "model"), registry, sessionLog);
 
     const events = await collect(agent.turn("User message"));
@@ -119,22 +118,35 @@ describe("Agent", () => {
     ]);
   });
 
-  test("a failed turn does not appear in the conversation", async () => {
-    const anthropic = new AnthropicSpy(["Reply", new Error("error")]);
-    const agent = new Agent(new LlmClient(anthropic.sdk, "model"), new ToolRegistry(), sessionLog);
-
-    await collect(agent.turn("User message 1"));
-    await expect(collect(agent.turn("User message 2"))).rejects.toThrow("error");
-    await collect(agent.turn("User message 3"));
-
-    expect(anthropic.calls[2]?.messages).toEqual([
-      { role: "user", content: [{ type: "text", text: "User message 1" }] },
-      { role: "assistant", content: [{ type: "text", text: "Reply" }] },
-      { role: "user", content: [{ type: "text", text: "User message 3" }] },
+  test("tools registered during a turn are immediately available", async () => {
+    const anthropic = new AnthropicSpy([
+      {
+        content: [{ type: "tool_use", id: "t1", name: "register-tool", input: {} }],
+        stop_reason: "tool_use",
+      },
+      {
+        content: [{ type: "text", text: "Reply" }],
+        stop_reason: "end_turn",
+      },
     ]);
+    const registry = new ToolRegistry();
+    registry.register(
+      makeTool("register-tool", {
+        execute: async () => {
+          registry.register(makeTool("new-tool"));
+          return "";
+        },
+      }),
+    );
+    const agent = new Agent(new LlmClient(anthropic.sdk, "model"), registry, sessionLog);
+
+    await collect(agent.turn("User message"));
+
+    expect(anthropic.calls[0]?.tools?.map((t) => t.name)).toEqual(["register-tool"]);
+    expect(anthropic.calls[1]?.tools?.map((t) => t.name)).toEqual(["register-tool", "new-tool"]);
   });
 
-  test("everything that happens during a turn is recorded in the session log", async () => {
+  test("agent activites are recorded in the session log", async () => {
     const anthropic = new AnthropicSpy([
       {
         content: [
@@ -149,12 +161,7 @@ describe("Agent", () => {
       },
     ]);
     const registry = new ToolRegistry();
-    registry.register({
-      name: "tool-name",
-      description: "description",
-      input_schema: { type: "object" },
-      execute: async () => "result",
-    });
+    registry.register(makeTool("tool-name", { execute: async () => "result" }));
     const agent = new Agent(new LlmClient(anthropic.sdk, "model"), registry, sessionLog);
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
@@ -178,6 +185,21 @@ describe("Agent", () => {
         is_error: false,
       },
       { time: "2026-04-22T12:00:00.000Z", kind: "assistant", text: "Reply 2" },
+    ]);
+  });
+
+  test("a failed turn does not appear in the conversation", async () => {
+    const anthropic = new AnthropicSpy(["Reply", new Error("error")]);
+    const agent = new Agent(new LlmClient(anthropic.sdk, "model"), new ToolRegistry(), sessionLog);
+
+    await collect(agent.turn("User message 1"));
+    await expect(collect(agent.turn("User message 2"))).rejects.toThrow("error");
+    await collect(agent.turn("User message 3"));
+
+    expect(anthropic.calls[2]?.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "User message 1" }] },
+      { role: "assistant", content: [{ type: "text", text: "Reply" }] },
+      { role: "user", content: [{ type: "text", text: "User message 3" }] },
     ]);
   });
 

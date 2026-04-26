@@ -5,9 +5,11 @@ import { Agent } from "./agent/agent.ts";
 import { LlmClient } from "./llm/client.ts";
 import { SessionLog } from "./session/log.ts";
 import { createSessionDir } from "./session/session.ts";
-import { getCurrentTime } from "./tools/builtins/get-current-time.ts";
-import { ToolRegistry } from "./tools/registry.ts";
+import { addTool } from "./tools/builtins/add-tool.ts";
+import { createToolsDir } from "./tools/dir.ts";
+import { createToolRegistry } from "./tools/discovery.ts";
 import { App } from "./tui/App.tsx";
+import { join } from "node:path";
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error("Error: ANTHROPIC_API_KEY environment variable is not set");
@@ -16,13 +18,18 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 console.log("Self-Evolving Agent");
 
-const sessionLog = new SessionLog(await createSessionDir());
-
-const toolRegistry = new ToolRegistry();
-toolRegistry.register(getCurrentTime);
-
 const model = process.env.MODEL ?? "claude-sonnet-4-6";
-const agent = new Agent(new LlmClient(new Anthropic(), model), toolRegistry, sessionLog);
+const systemPrompt = await Bun.file(join(import.meta.dir, "../PROMPT.md")).text();
+const llmClient = new LlmClient(new Anthropic(), model, systemPrompt);
+
+const toolsDir = await createToolsDir();
+const toolRegistry = await createToolRegistry(toolsDir);
+toolRegistry.register(addTool(toolsDir, toolRegistry));
+
+const sessionDir = await createSessionDir();
+const sessionLog = new SessionLog(sessionDir);
+
+const agent = new Agent(llmClient, toolRegistry, sessionLog);
 
 const { waitUntilExit } = render(createElement(App, { agent }));
 await waitUntilExit();

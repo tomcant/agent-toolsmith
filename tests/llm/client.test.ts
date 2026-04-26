@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { LlmClient } from "#/llm/client.ts";
-import type { Tool } from "#/tools/types.ts";
 import { AnthropicSpy } from "../doubles/anthropic-spy.ts";
+import { makeTool } from "../helpers.ts";
 
 describe("LlmClient", () => {
   test("translates the SDK response into a message with a stop reason", async () => {
@@ -48,19 +48,13 @@ describe("LlmClient", () => {
 
   test("forwards the model, messages, and tools to the SDK", async () => {
     const anthropic = new AnthropicSpy();
-    const client = new LlmClient(anthropic.sdk, "claude-test-model");
-    const tools: Tool[] = [
-      {
-        name: "tool-name",
-        description: "description",
-        input_schema: { type: "object" },
-        execute: async () => "",
-      },
-    ];
+    const client = new LlmClient(anthropic.sdk, "claude-test-model", "System prompt");
+    const tools = [makeTool("tool-name")];
 
     await client.send([{ role: "user", content: [{ type: "text", text: "User message" }] }], tools);
 
     expect(anthropic.calls[0]?.model).toBe("claude-test-model");
+    expect(anthropic.calls[0]?.system).toBe("System prompt");
     expect(anthropic.calls[0]?.messages).toEqual([
       { role: "user", content: [{ type: "text", text: "User message" }] },
     ]);

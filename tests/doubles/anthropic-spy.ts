@@ -5,6 +5,7 @@ export type CreateArgs = {
   max_tokens: number;
   messages: Anthropic.MessageParam[];
   tools?: Anthropic.Tool[];
+  system?: string;
 };
 
 export type SpyReply = string | Error | { content: ContentBlock[]; stop_reason: string };

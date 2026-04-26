@@ -1,15 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ToolRegistry } from "#/tools/registry.ts";
-import type { Tool } from "#/tools/types.ts";
-
-function makeTool(name: string): Tool {
-  return {
-    name,
-    description: "description",
-    input_schema: { type: "object" },
-    execute: async () => name,
-  };
-}
+import { makeTool } from "../helpers.ts";
 
 describe("ToolRegistry", () => {
   test("registered tools can be retrieved by name", () => {
@@ -38,5 +29,12 @@ describe("ToolRegistry", () => {
     const result = registry.get("missing");
 
     expect(result).toBeUndefined();
+  });
+
+  test("a name that is already registered is rejected", () => {
+    const registry = new ToolRegistry();
+    registry.register(makeTool("tool-name"));
+
+    expect(() => registry.register(makeTool("tool-name"))).toThrow("already registered");
   });
 });

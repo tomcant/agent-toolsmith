@@ -6,6 +6,7 @@ export class LlmClient {
   constructor(
     private readonly sdk: Anthropic,
     private readonly model: string,
+    private readonly systemPrompt?: string,
   ) {}
 
   async send(messages: Message[], tools?: Tool[]): Promise<LlmResponse> {
@@ -13,6 +14,7 @@ export class LlmClient {
       model: this.model,
       max_tokens: 8192,
       messages,
+      ...(this.systemPrompt ? { system: this.systemPrompt } : {}),
       ...(tools && tools.length > 0
         ? { tools: tools.map(({ execute, ...sdkTool }) => sdkTool) }
         : {}),
