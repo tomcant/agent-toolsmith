@@ -9,10 +9,14 @@ export type SessionRecord =
   | { kind: "error"; message: string };
 
 export class SessionLog {
-  constructor(private readonly dir: string) {}
+  private readonly path: string;
+
+  constructor(dir: string) {
+    this.path = join(dir, "session.jsonl");
+  }
 
   async write(record: SessionRecord): Promise<void> {
     const line = `${JSON.stringify({ time: new Date().toISOString(), ...record })}\n`;
-    await appendFile(join(this.dir, "session.jsonl"), line);
+    await appendFile(this.path, line);
   }
 }
