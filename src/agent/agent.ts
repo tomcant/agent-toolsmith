@@ -1,5 +1,5 @@
 import type { LlmClient } from "#/llm/client.ts";
-import type { Message, MessagePart } from "#/llm/types.ts";
+import type { LlmResponse, Message, MessagePart } from "#/llm/types.ts";
 import type { SessionLog, SessionRecord } from "#/session/log.ts";
 import type { ToolRegistry } from "#/tools/registry.ts";
 import type { AgentEvent } from "./types.ts";
@@ -7,7 +7,7 @@ import type { AgentEvent } from "./types.ts";
 type ToolResult = { content: string; is_error: boolean };
 
 export class Agent {
-  private conversation: Message[] = [];
+  private messages: Message[] = [];
 
   constructor(
     private readonly client: LlmClient,
@@ -19,19 +19,39 @@ export class Agent {
     await this.log.write({ kind: "user", text: input });
 
     const messages: Message[] = [
-      ...this.conversation,
+      ...this.messages,
       { role: "user", content: [{ type: "text", text: input }] },
     ];
 
     while (true) {
       try {
-        const { message, stop_reason } = await this.client.send(messages, this.registry.list());
+        const stream = this.client.send(messages, this.registry.list());
+        let response: LlmResponse | undefined;
+        let hasStreamedText = false;
+
+        for await (const event of stream) {
+          if (event.type === "delta") {
+            yield { type: "text", text: event.text };
+            hasStreamedText = true;
+          } else {
+            response = event.response;
+          }
+        }
+
+        if (!response) {
+          throw new Error("LLM stream ended without a response");
+        }
+
+        const { message, stop_reason } = response;
         messages.push(message);
 
         for (const block of message.content) {
           const event = toEvent(block);
-          if (event) {
-            await this.log.write(toSessionRecord(event));
+          if (!event) continue;
+
+          await this.log.write(toSessionRecord(event));
+
+          if (event.type !== "text" || !hasStreamedText) {
             yield event;
           }
         }
@@ -63,7 +83,7 @@ export class Agent {
       }
     }
 
-    this.conversation = messages;
+    this.messages = messages;
   }
 
   private async executeTool(name: string, input: unknown): Promise<ToolResult> {

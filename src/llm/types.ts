@@ -1,3 +1,7 @@
+export type LlmEvent =
+  | { type: "delta"; text: string }
+  | { type: "complete"; response: LlmResponse };
+
 export type LlmResponse = {
   message: Message;
   stop_reason: string;

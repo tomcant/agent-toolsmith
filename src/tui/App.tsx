@@ -1,5 +1,5 @@
 import { Spinner, TextInput } from "@inkjs/ui";
-import { Box, Static, Text, useApp, useInput } from "ink";
+import { Box, Text, useApp, useInput } from "ink";
 import { useState } from "react";
 import type { Agent } from "#/agent/agent.ts";
 import type { AgentEvent } from "#/agent/types.ts";
@@ -40,7 +40,7 @@ export function App({ agent }: AppProps) {
 
     try {
       for await (const event of agent.turn(value)) {
-        setHistory((prev) => [...prev, eventToItem(event, prev.length)]);
+        setHistory((prev) => appendHistoryItem(prev, event));
       }
     } catch (err) {
       const content = err instanceof Error ? err.message : String(err);
@@ -52,13 +52,11 @@ export function App({ agent }: AppProps) {
 
   return (
     <Box flexDirection="column">
-      <Static items={history}>
-        {(item) => (
-          <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
-            {renderItem(item)}
-          </Box>
-        )}
-      </Static>
+      {history.map((item) => (
+        <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
+          {renderHistoryItem(item)}
+        </Box>
+      ))}
       {busy && (
         <Box marginTop={1}>
           <Spinner label="Thinking..." />
@@ -77,18 +75,54 @@ export function App({ agent }: AppProps) {
   );
 }
 
-function eventToItem(event: AgentEvent, id: number): HistoryItem {
+function appendHistoryItem(history: HistoryItem[], event: AgentEvent): HistoryItem[] {
   switch (event.type) {
-    case "text":
-      return { kind: "assistant", id, content: event.text };
+    case "text": {
+      const last = history.at(-1);
+      if (last?.kind === "assistant") {
+        return [
+          ...history.slice(0, -1),
+          {
+            ...last,
+            content: `${last.content}${event.text}`,
+          },
+        ];
+      }
+      return [
+        ...history,
+        {
+          kind: "assistant",
+          id: history.length,
+          content: event.text,
+        },
+      ];
+    }
+
     case "tool_call":
-      return { kind: "tool_call", id, name: event.name, input: event.input };
+      return [
+        ...history,
+        {
+          kind: "tool_call",
+          id: history.length,
+          name: event.name,
+          input: event.input,
+        },
+      ];
+
     case "tool_result":
-      return { kind: "tool_result", id, content: event.content, is_error: event.is_error };
+      return [
+        ...history,
+        {
+          kind: "tool_result",
+          id: history.length,
+          content: event.content,
+          is_error: event.is_error,
+        },
+      ];
   }
 }
 
-function renderItem(item: HistoryItem) {
+function renderHistoryItem(item: HistoryItem) {
   switch (item.kind) {
     case "user":
       return (

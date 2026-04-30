@@ -8,7 +8,7 @@ import { LlmClient } from "#/llm/client.ts";
 import { SessionLog } from "#/session/log.ts";
 import { ToolRegistry } from "#/tools/registry.ts";
 import { AnthropicSpy } from "../doubles/anthropic-spy.ts";
-import { makeTool } from "../helpers.ts";
+import { collect, makeTool } from "../helpers.ts";
 
 describe("Agent", () => {
   let sessionDir: string;
@@ -118,6 +118,28 @@ describe("Agent", () => {
     ]);
   });
 
+  test("streams assistant text through the turn events", async () => {
+    const anthropic = new AnthropicSpy([
+      {
+        content: [{ type: "text", text: ["Re", "ply"] }],
+        stop_reason: "end_turn",
+      },
+    ]);
+    const agent = new Agent(new LlmClient(anthropic.sdk, "model"), new ToolRegistry(), sessionLog);
+    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
+
+    const events = await collect(agent.turn("User message"));
+
+    expect(events).toEqual([
+      { type: "text", text: "Re" },
+      { type: "text", text: "ply" },
+    ]);
+    expect(await readSessionLog(sessionDir)).toEqual([
+      { time: "2026-04-22T12:00:00.000Z", kind: "user", text: "User message" },
+      { time: "2026-04-22T12:00:00.000Z", kind: "assistant", text: "Reply" },
+    ]);
+  });
+
   test("tools registered during a turn are immediately available", async () => {
     const anthropic = new AnthropicSpy([
       {
@@ -216,12 +238,6 @@ describe("Agent", () => {
     ]);
   });
 });
-
-async function collect<T>(iterable: AsyncIterable<T>): Promise<T[]> {
-  const items: T[] = [];
-  for await (const item of iterable) items.push(item);
-  return items;
-}
 
 async function readSessionLog(sessionDir: string): Promise<unknown[]> {
   const contents = await Bun.file(join(sessionDir, "session.jsonl")).text();

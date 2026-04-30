@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
-export type CreateArgs = {
+type StreamArgs = {
   model: string;
   max_tokens: number;
   messages: Anthropic.MessageParam[];
@@ -8,39 +8,69 @@ export type CreateArgs = {
   system?: string;
 };
 
-export type SpyReply = string | Error | { content: ContentBlock[]; stop_reason: string };
+type SpyReply = string | Error | { content: ContentBlock[]; stop_reason: string };
 
-type ContentBlock = { type: string; [key: string]: unknown };
+type ContentBlock = { type: string; text?: string | string[]; [key: string]: unknown };
 
 export class AnthropicSpy {
   readonly sdk: Anthropic;
-  readonly calls: CreateArgs[] = [];
+  readonly calls: StreamArgs[] = [];
 
   constructor(replies: SpyReply[] = []) {
     let replyIndex = 0;
 
     this.sdk = {
       messages: {
-        create: (body: CreateArgs) => {
+        stream: (body: StreamArgs) => {
           this.calls.push({ ...body, messages: [...body.messages] });
 
-          const next = replies[replyIndex++];
+          const reply = replies[replyIndex++];
 
-          if (next instanceof Error) {
-            return Promise.reject(next);
+          if (reply instanceof Error) {
+            return {
+              // biome-ignore lint/correctness/useYield: error path throws before yielding
+              async *[Symbol.asyncIterator]() {
+                throw reply;
+              },
+              async finalMessage() {
+                throw reply;
+              },
+            };
           }
 
-          if (typeof next === "string") {
-            return Promise.resolve({
-              content: [{ type: "text", text: next }],
-              stop_reason: "end_turn",
-            });
+          let content: ContentBlock[] = [];
+          let stop_reason = "end_turn";
+
+          if (typeof reply === "string") {
+            content = [{ type: "text", text: reply }];
+          } else if (reply) {
+            ({ content, stop_reason } = reply);
           }
 
-          return Promise.resolve({
-            content: next?.content ?? [],
-            stop_reason: next?.stop_reason ?? "end_turn",
+          const blocks = content.map((block) => {
+            if (block.type !== "text") return { block, deltas: [] };
+            const deltas = Array.isArray(block.text) ? block.text : [block.text];
+            return { block: { ...block, text: deltas.join("") }, deltas };
           });
+
+          return {
+            async *[Symbol.asyncIterator]() {
+              for (const { deltas } of blocks) {
+                for (const text of deltas) {
+                  yield {
+                    type: "content_block_delta",
+                    delta: { type: "text_delta", text },
+                  };
+                }
+              }
+            },
+            async finalMessage() {
+              return {
+                content: blocks.map((b) => b.block),
+                stop_reason,
+              };
+            },
+          };
         },
       },
     } as unknown as Anthropic;
