@@ -55,7 +55,7 @@ describe("Agent", () => {
     expect(events).toEqual([
       { type: "text", text: "Reply 1" },
       { type: "tool_call", id: "t1", name: "tool-name", input: { key: "value" } },
-      { type: "tool_result", id: "t1", content: "result", is_error: false },
+      { type: "tool_result", tool_call_id: "t1", content: "result", is_error: false },
       { type: "text", text: "Reply 2" },
     ]);
     expect(inputsReceivedByTool).toEqual([{ key: "value" }]);
@@ -88,7 +88,7 @@ describe("Agent", () => {
       {
         content: [
           { type: "tool_use", id: "t1", name: "tool-name", input: {} },
-          { type: "tool_use", id: "t2", name: "missing-tool", input: {} },
+          { type: "tool_use", id: "t2", name: "missing", input: {} },
         ],
         stop_reason: "tool_use",
       },
@@ -111,9 +111,14 @@ describe("Agent", () => {
 
     expect(events).toEqual([
       { type: "tool_call", id: "t1", name: "tool-name", input: {} },
-      { type: "tool_call", id: "t2", name: "missing-tool", input: {} },
-      { type: "tool_result", id: "t1", content: "error", is_error: true },
-      { type: "tool_result", id: "t2", content: "Unknown tool: missing-tool", is_error: true },
+      { type: "tool_result", tool_call_id: "t1", content: "error", is_error: true },
+      { type: "tool_call", id: "t2", name: "missing", input: {} },
+      {
+        type: "tool_result",
+        tool_call_id: "t2",
+        content: "Unknown tool: missing",
+        is_error: true,
+      },
       { type: "text", text: "Reply" },
     ]);
   });
@@ -202,7 +207,7 @@ describe("Agent", () => {
       {
         time: "2026-04-22T12:00:00.000Z",
         kind: "tool_result",
-        id: "t1",
+        tool_call_id: "t1",
         content: "result",
         is_error: false,
       },

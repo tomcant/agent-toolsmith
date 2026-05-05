@@ -5,7 +5,7 @@ export type SessionRecord =
   | { kind: "user"; text: string }
   | { kind: "assistant"; text: string }
   | { kind: "tool_call"; id: string; name: string; input: unknown }
-  | { kind: "tool_result"; id: string; content: string; is_error: boolean }
+  | { kind: "tool_result"; tool_call_id: string; content: string; is_error: boolean }
   | { kind: "error"; message: string };
 
 export class SessionLog {

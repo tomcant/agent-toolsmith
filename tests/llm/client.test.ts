@@ -28,17 +28,11 @@ describe("LlmClient", () => {
       { type: "delta", text: "Tom." },
       {
         type: "complete",
-        response: {
-          message: {
-            role: "assistant",
-            content: [
-              { type: "text", text: "Hello, " },
-              { type: "tool_use", id: "t1", name: "tool-name", input: {} },
-              { type: "text", text: "Tom." },
-            ],
-          },
-          stop_reason: "tool_use",
-        },
+        response: [
+          { type: "text", text: "Hello, " },
+          { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+          { type: "text", text: "Tom." },
+        ],
       },
     ]);
   });

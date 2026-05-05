@@ -13,7 +13,7 @@ export class LlmClient {
     const stream = this.sdk.messages.stream({
       model: this.model,
       max_tokens: 8192,
-      messages,
+      messages: messages.map(toSdkMessage),
       ...(this.systemPrompt ? { system: this.systemPrompt } : {}),
       ...(tools && tools.length > 0
         ? { tools: tools.map(({ execute, ...sdkTool }) => sdkTool) }
@@ -26,37 +26,61 @@ export class LlmClient {
       }
     }
 
-    const response = await stream.finalMessage();
-
-    const content = response.content.flatMap((block): MessagePart[] => {
-      switch (block.type) {
-        case "text":
-          return [
-            {
-              type: "text",
-              text: block.text,
-            },
-          ];
-        case "tool_use":
-          return [
-            {
-              type: "tool_use",
-              id: block.id,
-              name: block.name,
-              input: block.input,
-            },
-          ];
-        default:
-          return [];
-      }
-    });
-
     yield {
       type: "complete",
-      response: {
-        message: { role: "assistant", content },
-        stop_reason: response.stop_reason ?? "end_turn",
-      },
+      response: fromSdkMessageContent((await stream.finalMessage()).content),
     };
   }
+}
+
+function toSdkMessage(message: Message): Anthropic.MessageParam {
+  return {
+    role: message.role,
+    content: message.content.map((part) => {
+      if (part.type === "text") {
+        return {
+          type: "text",
+          text: part.text,
+        };
+      }
+      if (part.type === "tool_call") {
+        return {
+          type: "tool_use",
+          id: part.id,
+          name: part.name,
+          input: part.input,
+        };
+      }
+      return {
+        type: "tool_result",
+        tool_use_id: part.tool_call_id,
+        content: part.content,
+        is_error: part.is_error,
+      };
+    }),
+  };
+}
+
+function fromSdkMessageContent(content: Anthropic.ContentBlock[]): MessagePart[] {
+  return content.flatMap((block): MessagePart[] => {
+    if (block.type === "text") {
+      return [
+        {
+          type: "text",
+          text: block.text,
+        },
+      ];
+    }
+    if (block.type === "tool_use") {
+      return [
+        {
+          type: "tool_call",
+          id: block.id,
+          name: block.name,
+          input: block.input,
+        },
+      ];
+    }
+    return [];
+  });
 }

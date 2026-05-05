@@ -1,5 +1,5 @@
 import type { LlmClient } from "#/llm/client.ts";
-import type { LlmResponse, Message, MessagePart } from "#/llm/types.ts";
+import type { Message, MessagePart } from "#/llm/types.ts";
 import type { SessionLog, SessionRecord } from "#/session/log.ts";
 import type { ToolRegistry } from "#/tools/registry.ts";
 import type { AgentEvent } from "./types.ts";
@@ -26,7 +26,7 @@ export class Agent {
     while (true) {
       try {
         const stream = this.client.send(messages, this.registry.list());
-        let response: LlmResponse | undefined;
+        let response: MessagePart[] | undefined;
         let hasStreamedText = false;
 
         for await (const event of stream) {
@@ -42,10 +42,11 @@ export class Agent {
           throw new Error("LLM stream ended without a response");
         }
 
-        const { message, stop_reason } = response;
-        messages.push(message);
+        messages.push({ role: "assistant", content: response });
 
-        for (const block of message.content) {
+        const toolResults: MessagePart[] = [];
+
+        for (const block of response) {
           const event = toEvent(block);
           if (!event) continue;
 
@@ -54,28 +55,33 @@ export class Agent {
           if (event.type !== "text" || !hasStreamedText) {
             yield event;
           }
-        }
 
-        if (stop_reason !== "tool_use") {
-          break;
-        }
-
-        const content: MessagePart[] = [];
-
-        for (const block of message.content) {
-          if (block.type !== "tool_use") {
+          if (block.type !== "tool_call") {
             continue;
           }
 
           const result = await this.executeTool(block.name, block.input);
-          content.push({ type: "tool_result", tool_use_id: block.id, ...result });
 
-          const event: AgentEvent = { type: "tool_result", id: block.id, ...result };
-          await this.log.write(toSessionRecord(event));
-          yield event;
+          toolResults.push({
+            type: "tool_result",
+            tool_call_id: block.id,
+            ...result,
+          });
+
+          const resultEvent: AgentEvent = {
+            type: "tool_result",
+            tool_call_id: block.id,
+            ...result,
+          };
+          await this.log.write(toSessionRecord(resultEvent));
+          yield resultEvent;
         }
 
-        messages.push({ role: "user", content });
+        if (toolResults.length === 0) {
+          break;
+        }
+
+        messages.push({ role: "user", content: toolResults });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         await this.log.write({ kind: "error", message });
@@ -110,7 +116,7 @@ function toEvent(block: MessagePart): AgentEvent | undefined {
         type: "text",
         text: block.text,
       };
-    case "tool_use":
+    case "tool_call":
       return {
         type: "tool_call",
         id: block.id,
@@ -139,7 +145,7 @@ function toSessionRecord(event: AgentEvent): SessionRecord {
     case "tool_result":
       return {
         kind: "tool_result",
-        id: event.id,
+        tool_call_id: event.tool_call_id,
         content: event.content,
         is_error: event.is_error,
       };
