@@ -1,5 +1,6 @@
 export type LlmEvent =
   | { type: "delta"; text: string }
+  | { type: "tool_call"; id: string; name: string; input: unknown }
   | { type: "complete"; response: MessagePart[] };
 
 export type Message = {

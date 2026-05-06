@@ -26,35 +26,42 @@ export class Agent {
     while (true) {
       try {
         const stream = this.client.send(messages, this.registry.list());
-        let response: MessagePart[] | undefined;
-        let hasStreamedText = false;
+        let finalResponse: MessagePart[] | undefined;
 
         for await (const event of stream) {
-          if (event.type === "delta") {
-            yield { type: "text", text: event.text };
-            hasStreamedText = true;
-          } else {
-            response = event.response;
+          switch (event.type) {
+            case "delta":
+              yield { type: "text", text: event.text };
+              break;
+
+            case "tool_call":
+              yield {
+                type: "tool_call",
+                id: event.id,
+                name: event.name,
+                input: event.input,
+              };
+              break;
+
+            case "complete":
+              finalResponse = event.response;
+              break;
           }
         }
 
-        if (!response) {
+        if (!finalResponse) {
           throw new Error("LLM stream ended without a response");
         }
 
-        messages.push({ role: "assistant", content: response });
+        messages.push({ role: "assistant", content: finalResponse });
 
         const toolResults: MessagePart[] = [];
 
-        for (const block of response) {
+        for (const block of finalResponse) {
           const event = toEvent(block);
           if (!event) continue;
 
           await this.log.write(toSessionRecord(event));
-
-          if (event.type !== "text" || !hasStreamedText) {
-            yield event;
-          }
 
           if (block.type !== "tool_call") {
             continue;

@@ -22,8 +22,18 @@ describe("session log", () => {
 
     await log.write({ kind: "user", text: "hello" });
     await log.write({ kind: "assistant", text: "hi" });
-    await log.write({ kind: "tool_call", id: "t1", name: "tool-name", input: {} });
-    await log.write({ kind: "tool_result", id: "t1", content: "result", is_error: false });
+    await log.write({
+      kind: "tool_call",
+      id: "t1",
+      name: "tool-name",
+      input: {},
+    });
+    await log.write({
+      kind: "tool_result",
+      tool_call_id: "t1",
+      content: "result",
+      is_error: false,
+    });
     await log.write({ kind: "error", message: "error" });
 
     const contents = await Bun.file(join(sessionDir, "session.jsonl")).text();
@@ -44,7 +54,7 @@ describe("session log", () => {
       {
         time: "2026-04-22T12:00:00.000Z",
         kind: "tool_result",
-        id: "t1",
+        tool_call_id: "t1",
         content: "result",
         is_error: false,
       },

@@ -111,8 +111,8 @@ describe("Agent", () => {
 
     expect(events).toEqual([
       { type: "tool_call", id: "t1", name: "tool-name", input: {} },
-      { type: "tool_result", tool_call_id: "t1", content: "error", is_error: true },
       { type: "tool_call", id: "t2", name: "missing", input: {} },
+      { type: "tool_result", tool_call_id: "t1", content: "error", is_error: true },
       {
         type: "tool_result",
         tool_call_id: "t2",

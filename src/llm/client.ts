@@ -20,9 +20,47 @@ export class LlmClient {
         : {}),
     });
 
+    const toolBlocks = new Map<number, { id: string; name: string; json: string }>();
+
     for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        yield { type: "delta", text: event.delta.text };
+      switch (event.type) {
+        case "content_block_start":
+          if (event.content_block.type === "tool_use") {
+            toolBlocks.set(event.index, {
+              id: event.content_block.id,
+              name: event.content_block.name,
+              json: "",
+            });
+          }
+          break;
+
+        case "content_block_delta":
+          if (event.delta.type === "text_delta") {
+            yield {
+              type: "delta",
+              text: event.delta.text,
+            };
+            break;
+          }
+          if (event.delta.type === "input_json_delta") {
+            const block = toolBlocks.get(event.index);
+            if (block) block.json += event.delta.partial_json;
+          }
+          break;
+
+        case "content_block_stop": {
+          const block = toolBlocks.get(event.index);
+          if (block) {
+            yield {
+              type: "tool_call",
+              id: block.id,
+              name: block.name,
+              input: block.json ? JSON.parse(block.json) : {},
+            };
+            toolBlocks.delete(event.index);
+          }
+          break;
+        }
       }
     }
 

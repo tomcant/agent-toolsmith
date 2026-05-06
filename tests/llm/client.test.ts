@@ -10,7 +10,7 @@ describe("LlmClient", () => {
         content: [
           { type: "text", text: ["Hello", ", "] },
           { type: "thinking", thinking: "Reasoning..." },
-          { type: "tool_use", id: "t1", name: "tool-name", input: {} },
+          { type: "tool_use", id: "t1", name: "tool-name", input: { key: "value" } },
           { type: "text", text: "Tom." },
         ],
         stop_reason: "tool_use",
@@ -25,12 +25,13 @@ describe("LlmClient", () => {
     expect(events).toEqual([
       { type: "delta", text: "Hello" },
       { type: "delta", text: ", " },
+      { type: "tool_call", id: "t1", name: "tool-name", input: { key: "value" } },
       { type: "delta", text: "Tom." },
       {
         type: "complete",
         response: [
           { type: "text", text: "Hello, " },
-          { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+          { type: "tool_call", id: "t1", name: "tool-name", input: { key: "value" } },
           { type: "text", text: "Tom." },
         ],
       },
