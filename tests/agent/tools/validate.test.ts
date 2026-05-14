@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { validateMetadata, validateTool } from "#/tools/validate.ts";
+import { validateMetadata, validateTool } from "#/agent/tools/validate.ts";
 
 const validMetadata = {
   name: "tool-name",
   description: "description",
-  input_schema: { type: "object" },
+  parameters: { type: "object" },
 };
 
 const validTool = {
@@ -30,9 +30,9 @@ describe("tool metadata rules", () => {
     expect(() => validateMetadata({ ...validMetadata, description: "" })).toThrow("description");
   });
 
-  test("an input_schema that is not an object schema is rejected", () => {
-    expect(() => validateMetadata({ ...validMetadata, input_schema: { type: "string" } })).toThrow(
-      "input_schema",
+  test("a parameters field that is not an object schema is rejected", () => {
+    expect(() => validateMetadata({ ...validMetadata, parameters: { type: "string" } })).toThrow(
+      "parameters",
     );
   });
 });

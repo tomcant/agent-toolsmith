@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bu
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SessionLog } from "#/session/log.ts";
+import { SessionLog } from "#/agent/session/log.ts";
 
 describe("session log", () => {
   let sessionDir: string;
@@ -16,23 +16,24 @@ describe("session log", () => {
     setSystemTime();
   });
 
-  test("writes are persisted as timestamped JSON lines", async () => {
+  test("messages and errors are persisted as timestamped JSON lines", async () => {
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
     const log = new SessionLog(sessionDir);
 
-    await log.write({ kind: "user", text: "hello" });
-    await log.write({ kind: "assistant", text: "hi" });
     await log.write({
-      kind: "tool_call",
-      id: "t1",
-      name: "tool-name",
-      input: {},
+      role: "user",
+      content: [{ type: "text", text: "hello" }],
     });
     await log.write({
-      kind: "tool_result",
-      tool_call_id: "t1",
-      content: "result",
-      is_error: false,
+      role: "assistant",
+      content: [
+        { type: "text", text: "hi" },
+        { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+      ],
+    });
+    await log.write({
+      role: "user",
+      content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
     });
     await log.write({ kind: "error", message: "error" });
 
@@ -42,21 +43,23 @@ describe("session log", () => {
       .split("\n")
       .map((l) => JSON.parse(l));
     expect(lines).toEqual([
-      { time: "2026-04-22T12:00:00.000Z", kind: "user", text: "hello" },
-      { time: "2026-04-22T12:00:00.000Z", kind: "assistant", text: "hi" },
       {
         time: "2026-04-22T12:00:00.000Z",
-        kind: "tool_call",
-        id: "t1",
-        name: "tool-name",
-        input: {},
+        role: "user",
+        content: [{ type: "text", text: "hello" }],
       },
       {
         time: "2026-04-22T12:00:00.000Z",
-        kind: "tool_result",
-        tool_call_id: "t1",
-        content: "result",
-        is_error: false,
+        role: "assistant",
+        content: [
+          { type: "text", text: "hi" },
+          { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+        ],
+      },
+      {
+        time: "2026-04-22T12:00:00.000Z",
+        role: "user",
+        content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
       },
       { time: "2026-04-22T12:00:00.000Z", kind: "error", message: "error" },
     ]);

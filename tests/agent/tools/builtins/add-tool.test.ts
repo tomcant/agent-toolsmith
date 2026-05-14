@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { addTool } from "#/tools/builtins/add-tool.ts";
-import { ToolRegistry } from "#/tools/registry.ts";
-import { makeTool } from "../../helpers.ts";
+import { addTool } from "#/agent/tools/builtins/add-tool.ts";
+import { ToolRegistry } from "#/agent/tools/registry.ts";
+import { makeTool } from "../../../helpers.ts";
 
 describe("builtin add-tool", () => {
   let toolsDir: string;
@@ -25,24 +25,12 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "tool-name",
       description: "description",
-      input_schema: { type: "object" },
+      parameters: { type: "object" },
       code: `return "";`,
     });
 
     expect(result).toBe("Added tool 'tool-name'");
     expect(toolRegistry.get("tool-name")?.name).toBe("tool-name");
-  });
-
-  test("writes a file to the tools directory", async () => {
-    const tool = addTool(toolsDir, toolRegistry);
-
-    await tool.execute({
-      name: "tool-name",
-      description: "description",
-      input_schema: { type: "object" },
-      code: `return "";`,
-    });
-
     expect(await readdir(toolsDir)).toEqual(["tool-name.ts"]);
   });
 
@@ -54,7 +42,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "existing",
       description: "description",
-      input_schema: { type: "object" },
+      parameters: { type: "object" },
       code: `return "";`,
     });
 
@@ -69,7 +57,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "has space",
       description: "description",
-      input_schema: { type: "object" },
+      parameters: { type: "object" },
       code: `return "";`,
     });
 
@@ -84,7 +72,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "tool-name",
       description: "description",
-      input_schema: { type: "object" },
+      parameters: { type: "object" },
       code: "",
     });
 
@@ -99,7 +87,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "broken",
       description: "description",
-      input_schema: { type: "object" },
+      parameters: { type: "object" },
       code: `this is not valid typescript {`,
     });
 

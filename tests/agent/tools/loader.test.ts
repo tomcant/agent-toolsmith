@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadTool } from "#/tools/loader.ts";
+import { loadTool } from "#/agent/tools/loader.ts";
 
 describe("loading a tool from a file", () => {
   let toolsDir: string;
@@ -22,7 +22,7 @@ describe("loading a tool from a file", () => {
       `export const tool = {
         name: "tool-name",
         description: "description",
-        input_schema: { type: "object" },
+        parameters: { type: "object" },
         execute: async () => "",
       };`,
     );
@@ -53,7 +53,7 @@ describe("loading a tool from a file", () => {
       `export const tool = {
         name: "has space",
         description: "description",
-        input_schema: { type: "object" },
+        parameters: { type: "object" },
         execute: async () => "",
       };`,
     );

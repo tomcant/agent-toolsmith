@@ -1,8 +1,6 @@
-import type { LlmClient } from "#/llm/client.ts";
-import type { Message, MessagePart } from "#/llm/types.ts";
-import type { SessionLog, SessionRecord } from "#/session/log.ts";
-import type { ToolRegistry } from "#/tools/registry.ts";
-import type { AgentEvent } from "./types.ts";
+import type { SessionLog } from "./session/log.ts";
+import type { ToolRegistry } from "./tools/registry.ts";
+import type { AgentEvent, LlmClient, Message, MessagePart } from "./types.ts";
 
 type ToolResult = { content: string; is_error: boolean };
 
@@ -16,12 +14,12 @@ export class Agent {
   ) {}
 
   async *turn(input: string): AsyncGenerator<AgentEvent> {
-    await this.log.write({ kind: "user", text: input });
-
-    const messages: Message[] = [
-      ...this.messages,
-      { role: "user", content: [{ type: "text", text: input }] },
-    ];
+    const userMessage: Message = {
+      role: "user",
+      content: [{ type: "text", text: input }],
+    };
+    const messages: Message[] = [...this.messages, userMessage];
+    await this.log.write(userMessage);
 
     while (true) {
       try {
@@ -30,7 +28,7 @@ export class Agent {
 
         for await (const event of stream) {
           switch (event.type) {
-            case "delta":
+            case "text_delta":
               yield { type: "text", text: event.text };
               break;
 
@@ -53,42 +51,22 @@ export class Agent {
           throw new Error("LLM stream ended without a response");
         }
 
-        messages.push({ role: "assistant", content: finalResponse });
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: finalResponse,
+        };
+        messages.push(assistantMessage);
+        await this.log.write(assistantMessage);
 
-        const toolResults: MessagePart[] = [];
+        const toolResults = yield* this.executeTools(finalResponse);
+        if (toolResults.length === 0) break;
 
-        for (const block of finalResponse) {
-          const event = toEvent(block);
-          if (!event) continue;
-
-          await this.log.write(toSessionRecord(event));
-
-          if (block.type !== "tool_call") {
-            continue;
-          }
-
-          const result = await this.executeTool(block.name, block.input);
-
-          toolResults.push({
-            type: "tool_result",
-            tool_call_id: block.id,
-            ...result,
-          });
-
-          const resultEvent: AgentEvent = {
-            type: "tool_result",
-            tool_call_id: block.id,
-            ...result,
-          };
-          await this.log.write(toSessionRecord(resultEvent));
-          yield resultEvent;
-        }
-
-        if (toolResults.length === 0) {
-          break;
-        }
-
-        messages.push({ role: "user", content: toolResults });
+        const toolResultsMessage: Message = {
+          role: "user",
+          content: toolResults,
+        };
+        messages.push(toolResultsMessage);
+        await this.log.write(toolResultsMessage);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         await this.log.write({ kind: "error", message });
@@ -99,62 +77,37 @@ export class Agent {
     this.messages = messages;
   }
 
-  private async executeTool(name: string, input: unknown): Promise<ToolResult> {
-    const tool = this.registry.get(name);
+  private async *executeTools(blocks: MessagePart[]): AsyncGenerator<AgentEvent, MessagePart[]> {
+    const toolResults: MessagePart[] = [];
 
-    if (!tool) {
-      return { content: `Unknown tool: ${name}`, is_error: true };
+    for (const block of blocks) {
+      if (block.type !== "tool_call") continue;
+
+      const tool = this.registry.get(block.name);
+      let result: ToolResult;
+
+      if (!tool) {
+        result = { content: `Unknown tool: ${block.name}`, is_error: true };
+      } else {
+        try {
+          const content = await tool.execute(block.input);
+          result = { content, is_error: false };
+        } catch (err) {
+          const content = err instanceof Error ? err.message : String(err);
+          result = { content, is_error: true };
+        }
+      }
+
+      const toolResult = {
+        type: "tool_result",
+        tool_call_id: block.id,
+        ...result,
+      } as const;
+
+      toolResults.push(toolResult);
+      yield toolResult;
     }
 
-    try {
-      const content = await tool.execute(input);
-      return { content, is_error: false };
-    } catch (err) {
-      const content = err instanceof Error ? err.message : String(err);
-      return { content, is_error: true };
-    }
-  }
-}
-
-function toEvent(block: MessagePart): AgentEvent | undefined {
-  switch (block.type) {
-    case "text":
-      return {
-        type: "text",
-        text: block.text,
-      };
-    case "tool_call":
-      return {
-        type: "tool_call",
-        id: block.id,
-        name: block.name,
-        input: block.input,
-      };
-    default:
-      return undefined;
-  }
-}
-
-function toSessionRecord(event: AgentEvent): SessionRecord {
-  switch (event.type) {
-    case "text":
-      return {
-        kind: "assistant",
-        text: event.text,
-      };
-    case "tool_call":
-      return {
-        kind: "tool_call",
-        id: event.id,
-        name: event.name,
-        input: event.input,
-      };
-    case "tool_result":
-      return {
-        kind: "tool_result",
-        tool_call_id: event.tool_call_id,
-        content: event.content,
-        is_error: event.is_error,
-      };
+    return toolResults;
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { ToolRegistry } from "#/tools/registry.ts";
-import { makeTool } from "../helpers.ts";
+import { ToolRegistry } from "#/agent/tools/registry.ts";
+import { makeTool } from "../../helpers.ts";
 
 describe("ToolRegistry", () => {
   test("registered tools can be retrieved by name", () => {

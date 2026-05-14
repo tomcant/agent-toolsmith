@@ -7,7 +7,7 @@ export function validateMetadata(input: unknown): asserts input is ToolMetadata 
     throw new Error("tool must be an object");
   }
 
-  const { name, description, input_schema } = input;
+  const { name, description, parameters } = input;
 
   if (typeof name !== "string" || !NAME_PATTERN.test(name)) {
     throw new Error("tool name must match ^[a-z0-9-]{1,64}$");
@@ -17,8 +17,8 @@ export function validateMetadata(input: unknown): asserts input is ToolMetadata 
     throw new Error("tool description must be a non-empty string");
   }
 
-  if (!isObject(input_schema) || (input_schema as { type?: unknown }).type !== "object") {
-    throw new Error("tool input_schema must be an object schema (type: 'object')");
+  if (!isObject(parameters) || parameters.type !== "object") {
+    throw new Error("tool parameters must be an object schema (type: 'object')");
   }
 }
 

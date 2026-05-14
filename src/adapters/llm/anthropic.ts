@@ -1,8 +1,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Tool } from "#/tools/types.ts";
-import type { LlmEvent, Message, MessagePart } from "./types.ts";
+import type { Tool } from "#/agent/tools/types.ts";
+import type { LlmClient, LlmEvent, Message, MessagePart } from "#/agent/types.ts";
 
-export class LlmClient {
+export class AnthropicLlmClient implements LlmClient {
   constructor(
     private readonly sdk: Anthropic,
     private readonly model: string,
@@ -14,10 +14,8 @@ export class LlmClient {
       model: this.model,
       max_tokens: 8192,
       messages: messages.map(toSdkMessage),
+      ...(tools && tools.length > 0 ? { tools: tools.map(toSdkTool) } : {}),
       ...(this.systemPrompt ? { system: this.systemPrompt } : {}),
-      ...(tools && tools.length > 0
-        ? { tools: tools.map(({ execute, ...sdkTool }) => sdkTool) }
-        : {}),
     });
 
     const toolBlocks = new Map<number, { id: string; name: string; json: string }>();
@@ -37,7 +35,7 @@ export class LlmClient {
         case "content_block_delta":
           if (event.delta.type === "text_delta") {
             yield {
-              type: "delta",
+              type: "text_delta",
               text: event.delta.text,
             };
             break;
@@ -96,6 +94,14 @@ function toSdkMessage(message: Message): Anthropic.MessageParam {
         is_error: part.is_error,
       };
     }),
+  };
+}
+
+function toSdkTool(tool: Tool): Anthropic.Tool {
+  return {
+    name: tool.name,
+    description: tool.description,
+    input_schema: tool.parameters,
   };
 }
 

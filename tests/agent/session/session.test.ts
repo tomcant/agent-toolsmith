@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bu
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createSessionDir } from "#/session/session.ts";
+import { createSessionDir } from "#/agent/session/session.ts";
 
 describe("session directory", () => {
   let sessionsRootDir: string;

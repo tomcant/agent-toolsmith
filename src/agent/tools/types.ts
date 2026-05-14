@@ -5,10 +5,10 @@ export type Tool = ToolMetadata & {
 export type ToolMetadata = {
   name: string;
   description: string;
-  input_schema: ToolInputSchema;
+  parameters: ToolParameters;
 };
 
-export type ToolInputSchema = {
+type ToolParameters = {
   type: "object";
   properties?: Record<string, unknown>;
   required?: string[];

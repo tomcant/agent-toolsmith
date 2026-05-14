@@ -1,12 +1,8 @@
 import { appendFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { Message } from "../types.ts";
 
-export type SessionRecord =
-  | { kind: "user"; text: string }
-  | { kind: "assistant"; text: string }
-  | { kind: "tool_call"; id: string; name: string; input: unknown }
-  | { kind: "tool_result"; tool_call_id: string; content: string; is_error: boolean }
-  | { kind: "error"; message: string };
+type SessionRecord = Message | { kind: "error"; message: string };
 
 export class SessionLog {
   private readonly path: string;

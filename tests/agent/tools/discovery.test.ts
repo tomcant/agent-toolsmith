@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createToolRegistry } from "#/tools/discovery.ts";
+import { createToolRegistry } from "#/agent/tools/discovery.ts";
 
 describe("discovering tools", () => {
   let toolsDir: string;
@@ -45,7 +45,7 @@ describe("discovering tools", () => {
       `export const tool = {
         name: "tool-name",
         description: "description",
-        input_schema: { type: "object" },
+        parameters: { type: "object" },
         execute: async () => "",
       };`,
     );
@@ -72,7 +72,7 @@ async function writeTool(dir: string, name: string): Promise<void> {
   const source = `export const tool = {
     name: "${name}",
     description: "description",
-    input_schema: { type: "object" },
+    parameters: { type: "object" },
     execute: async () => "",
   };`;
   await Bun.write(join(dir, `${name}.ts`), source);

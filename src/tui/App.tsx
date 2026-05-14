@@ -1,8 +1,7 @@
 import { Spinner, TextInput } from "@inkjs/ui";
 import { Box, Text, useApp, useInput } from "ink";
 import { useState } from "react";
-import type { Agent } from "#/agent/agent.ts";
-import type { AgentEvent } from "#/agent/types.ts";
+import type { Agent, AgentEvent } from "#/agent";
 import { isExitCommand } from "./commands.ts";
 
 type HistoryItem =
