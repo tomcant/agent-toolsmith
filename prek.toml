@@ -2,21 +2,21 @@
 repo = "local"
 hooks = [
   {
-    id = "format",
-    name = "format",
+    id = "biome-check",
+    name = "biome-check",
     language = "system",
     pass_filenames = false,
     files = { glob = [ "*.ts", "*.json" ] },
-    entry = "bun format:check",
+    entry = "bun check",
     priority = 10,
   },
   {
-    id = "lint",
-    name = "lint",
+    id = "type-check",
+    name = "type-check",
     language = "system",
     pass_filenames = false,
-    files = { glob = [ "*.ts", "*.json" ] },
-    entry = "bun lint",
+    files = { glob = [ "*.ts" ] },
+    entry = "bun tsc",
     priority = 20,
   },
   {

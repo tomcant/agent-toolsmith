@@ -8,7 +8,7 @@ This is the repository for a self-evolving AI agent that runs on the CLI
 | ------ | ---------------------- |
 | Run    | `bun run src/index.ts` |
 | Test   | `bun test`             |
-| Lint   | `bun lint`             |
+| Lint   | `bun check`            |
 | Format | `bun format`           |
 
 ## Conventions

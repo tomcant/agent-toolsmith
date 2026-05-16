@@ -1,12 +1,10 @@
 # Testing
 
-Tests use Bun's built-in test runner (`bun:test`).
+Tests use Bun's built-in test runner (`bun:test`) and are located in `tests/`.
 
 ```bash
 bun test # run all tests
 ```
-
-Tests are located in `tests/` and organised by **feature/behaviour**, not by file structure.
 
 ## Philosophy
 

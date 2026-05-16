@@ -4,10 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "lint": "biome lint --error-on-warnings .",
-    "lint:fix": "biome lint --write .",
-    "format": "biome format --write .",
-    "format:check": "biome format ."
+    "check": "biome check --error-on-warnings",
+    "check:fix": "biome check --write --unsafe",
+    "format": "biome format --write",
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.81.0",
