@@ -1,5 +1,5 @@
 import { Spinner, TextInput } from "@inkjs/ui";
-import { Box, Text, useApp, useInput } from "ink";
+import { Box, Text, useApp } from "ink";
 import { useState } from "react";
 import type { Agent, AgentEvent } from "#/agent";
 import { isExitCommand } from "./commands.ts";
@@ -20,12 +20,6 @@ export function App({ agent }: AppProps) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [inputKey, setInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
-
-  useInput((input, key) => {
-    if (key.ctrl && input === "c") {
-      exit();
-    }
-  });
 
   const handleSubmit = async (value: string) => {
     if (isExitCommand(value)) {

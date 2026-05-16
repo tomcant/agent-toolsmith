@@ -1,0 +1,114 @@
+import type { LlmEvent, MessagePart } from "#/agent/types.ts";
+
+const TEXT_DELAY_MS = 30;
+const EVENT_DELAY_MS = 300;
+
+export function runScenario(name: string): AsyncGenerator<LlmEvent> {
+  return scenarios[name] ? scenarios[name]() : unknownScenario(name);
+}
+
+const scenarios: Record<string, () => AsyncGenerator<LlmEvent>> = {
+  text: textScenario,
+  "long-text": longTextScenario,
+  tool: toolScenario,
+  "multi-tool": multiToolScenario,
+  "tool-error": toolErrorScenario,
+  error: errorScenario,
+};
+
+export const scenarioNames = Object.keys(scenarios);
+
+async function* textScenario(): AsyncGenerator<LlmEvent> {
+  yield* streamTextAndComplete("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+}
+
+async function* longTextScenario(): AsyncGenerator<LlmEvent> {
+  const paragraphs = [
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum leo ex, aliquet pellentesque nulla ut, fermentum vestibulum urna. Fusce nisi ante, eleifend non enim et, aliquet elementum arcu.",
+    "Aenean sit amet velit libero. Suspendisse id vehicula leo. Vestibulum ultricies semper libero, in tincidunt nunc faucibus sed. Duis vulputate augue eget tortor tempus, at accumsan augue laoreet.",
+    "Proin finibus ante in pretium dictum. Cras tempus tempor posuere. Donec sodales eget justo a cursus. Suspendisse sollicitudin sit amet turpis eget fermentum.",
+  ];
+  yield* streamTextAndComplete(paragraphs.join("\n\n"));
+}
+
+async function* toolScenario(): AsyncGenerator<LlmEvent> {
+  const call = {
+    id: "demo-tool",
+    name: "echo",
+    input: { text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit" },
+  };
+  await sleep(EVENT_DELAY_MS);
+  yield { type: "tool_call", ...call };
+  yield complete([{ type: "tool_call", ...call }]);
+}
+
+async function* multiToolScenario(): AsyncGenerator<LlmEvent> {
+  const calls = [
+    {
+      id: "demo-multi-tool-1",
+      name: "search",
+      input: { term: "foo" },
+    },
+    {
+      id: "demo-multi-tool-2",
+      name: "run",
+      input: { argv: ["ls", "-la"] },
+    },
+    {
+      id: "demo-multi-tool-3",
+      name: "now",
+      input: null,
+    },
+  ];
+  const parts: MessagePart[] = [];
+  for (const call of calls) {
+    await sleep(EVENT_DELAY_MS);
+    yield { type: "tool_call", ...call };
+    parts.push({ type: "tool_call", ...call });
+  }
+  yield complete(parts);
+}
+
+async function* toolErrorScenario(): AsyncGenerator<LlmEvent> {
+  const call = {
+    id: "demo-tool-error",
+    name: "error",
+    input: {},
+  };
+  await sleep(EVENT_DELAY_MS);
+  yield { type: "tool_call", ...call };
+  yield complete([{ type: "tool_call", ...call }]);
+}
+
+async function* errorScenario(): AsyncGenerator<LlmEvent> {
+  await sleep(EVENT_DELAY_MS);
+  yield* streamText("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+  throw new Error("Simulated LLM failure mid-stream");
+}
+
+async function* unknownScenario(scenario: string): AsyncGenerator<LlmEvent> {
+  const list = scenarioNames.join(", ");
+  yield* streamTextAndComplete(
+    scenario
+      ? `Unknown scenario "${scenario}". Try: ${list}.`
+      : `Type a scenario keyword: ${list}.`,
+  );
+}
+
+async function* streamTextAndComplete(text: string): AsyncGenerator<LlmEvent> {
+  yield* streamText(text);
+  yield complete([{ type: "text", text }]);
+}
+
+async function* streamText(text: string): AsyncGenerator<LlmEvent> {
+  for (const delta of text.split(/(?<=\s)/)) {
+    yield { type: "text_delta", text: delta };
+    await sleep(TEXT_DELAY_MS);
+  }
+}
+
+function complete(response: MessagePart[]): LlmEvent {
+  return { type: "complete", response };
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
