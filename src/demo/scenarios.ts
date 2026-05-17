@@ -16,8 +16,6 @@ const scenarios: Record<string, () => AsyncGenerator<LlmEvent>> = {
   error: errorScenario,
 };
 
-export const scenarioNames = Object.keys(scenarios);
-
 async function* textScenario(): AsyncGenerator<LlmEvent> {
   yield* streamTextAndComplete("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 }
@@ -87,7 +85,7 @@ async function* errorScenario(): AsyncGenerator<LlmEvent> {
 }
 
 async function* unknownScenario(scenario: string): AsyncGenerator<LlmEvent> {
-  const list = scenarioNames.join(", ");
+  const list = Object.keys(scenarios).join(", ");
   yield* streamTextAndComplete(
     scenario
       ? `Unknown scenario "${scenario}". Try: ${list}.`

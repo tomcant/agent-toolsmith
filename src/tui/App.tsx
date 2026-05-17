@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Agent } from "#/agent";
 import { isExitCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
+import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
@@ -45,6 +46,7 @@ export function App({ agent }: AppProps) {
 
   return (
     <Box flexDirection="column">
+      <Banner />
       {transcript.map((item) => (
         <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
           {renderTranscriptItem(item, width)}

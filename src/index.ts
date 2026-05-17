@@ -8,8 +8,6 @@ import { createDemoAgent } from "./demo";
 import systemPrompt from "./prompt.md";
 import { App } from "./tui/App.tsx";
 
-console.log("Self-Evolving Agent");
-
 const agent = await (process.env.DEMO === "1" ? createDemoAgent() : createProdAgent());
 
 const { waitUntilExit } = render(createElement(App, { agent }), { exitOnCtrlC: true });
