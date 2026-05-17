@@ -4,8 +4,7 @@ import { loadTool } from "../loader.ts";
 import type { ToolRegistry } from "../registry.ts";
 import type { Tool, ToolMetadata } from "../types.ts";
 import { validateMetadata } from "../validate.ts";
-
-const TEMPLATE_PATH = join(import.meta.dir, "tool.ts.tpl");
+import template from "./tool.ts.tpl" with { type: "text" };
 
 export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
   return {
@@ -51,7 +50,7 @@ export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
       }
 
       const path = join(toolsDir, `${input.name}.ts`);
-      await Bun.write(path, await renderTool(input, code));
+      await Bun.write(path, renderTool(input, code));
 
       try {
         const tool = await loadTool(path);
@@ -67,8 +66,8 @@ export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
   };
 }
 
-async function renderTool(metadata: ToolMetadata, code: string): Promise<string> {
-  return (await Bun.file(TEMPLATE_PATH).text())
+function renderTool(metadata: ToolMetadata, code: string): string {
+  return template
     .replace("__NAME__", JSON.stringify(metadata.name))
     .replace("__DESCRIPTION__", JSON.stringify(metadata.description))
     .replace("__SCHEMA__", JSON.stringify(metadata.parameters))
