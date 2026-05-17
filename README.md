@@ -2,6 +2,11 @@
 
 A general-purpose AI agent that evolves itself when required.
 
+## Prerequisites
+
+- [Bun](https://bun.sh) JavaScript runtime
+- [Anthropic](https://platform.claude.com) API key
+
 ## Setup
 
 Install dependencies:
@@ -18,14 +23,13 @@ Start an interactive chat with the agent:
 bun run src/index.ts
 ```
 
-Type `/quit`, `/exit` or press Ctrl+C to quit.
-
 ## Development
 
 ```sh
 bun test    # run all tests
-bun lint    # run Biome linter
+bun check   # run Biome checker
 bun format  # run Biome formatter
+bun tsc     # run TS type checker
 ```
 
 See [docs/TESTING.md](docs/TESTING.md) for an overview of testing philosophy and conventions.
@@ -33,5 +37,5 @@ See [docs/TESTING.md](docs/TESTING.md) for an overview of testing philosophy and
 Pre-commit checks are managed with [prek](https://github.com/j178/prek), a Rust re-implementation of [pre-commit](https://github.com/pre-commit/pre-commit). Run all pre-commit checks manually with:
 
 ```sh
-prek -a  # format, lint, test
+prek -a  # check format, lint, types and run tests
 ```
