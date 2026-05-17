@@ -7,8 +7,17 @@ import { isExitCommand } from "./commands.ts";
 type HistoryItem =
   | { kind: "user"; id: number; content: string }
   | { kind: "assistant"; id: number; content: string }
-  | { kind: "tool_call"; id: number; name: string; input: unknown }
-  | { kind: "tool_result"; id: number; content: string; is_error: boolean }
+  | {
+      kind: "tool_call";
+      id: number;
+      tool_call_id: string;
+      name: string;
+      input: unknown;
+      result?: {
+        content: string;
+        is_error: boolean;
+      };
+    }
   | { kind: "error"; id: number; content: string };
 
 type AppProps = {
@@ -33,7 +42,7 @@ export function App({ agent }: AppProps) {
 
     try {
       for await (const event of agent.turn(value)) {
-        setHistory((prev) => appendHistoryItem(prev, event));
+        setHistory((prev) => applyEvent(prev, event));
       }
     } catch (err) {
       const content = err instanceof Error ? err.message : String(err);
@@ -68,7 +77,7 @@ export function App({ agent }: AppProps) {
   );
 }
 
-function appendHistoryItem(history: HistoryItem[], event: AgentEvent): HistoryItem[] {
+function applyEvent(history: HistoryItem[], event: AgentEvent): HistoryItem[] {
   switch (event.type) {
     case "text": {
       const last = history.at(-1);
@@ -97,21 +106,28 @@ function appendHistoryItem(history: HistoryItem[], event: AgentEvent): HistoryIt
         {
           kind: "tool_call",
           id: history.length,
+          tool_call_id: event.id,
           name: event.name,
           input: event.input,
         },
       ];
 
-    case "tool_result":
+    case "tool_result": {
+      const callIdx = history.findIndex(
+        (item) => item.kind === "tool_call" && item.tool_call_id === event.tool_call_id,
+      );
+      if (callIdx === -1) {
+        return history;
+      }
       return [
-        ...history,
+        ...history.slice(0, callIdx),
         {
-          kind: "tool_result",
-          id: history.length,
-          content: event.content,
-          is_error: event.is_error,
+          ...(history[callIdx] as Extract<HistoryItem, { kind: "tool_call" }>),
+          result: { content: event.content, is_error: event.is_error },
         },
+        ...history.slice(callIdx + 1),
       ];
+    }
   }
 }
 
@@ -126,6 +142,7 @@ function renderHistoryItem(item: HistoryItem) {
           <Text>{item.content}</Text>
         </>
       );
+
     case "assistant":
       return (
         <>
@@ -135,28 +152,29 @@ function renderHistoryItem(item: HistoryItem) {
           <Text>{item.content}</Text>
         </>
       );
+
     case "tool_call":
       return (
-        <Text>
-          <Text color="gray">⚙ </Text>
-          {item.name}({JSON.stringify(item.input)})
-        </Text>
-      );
-    case "tool_result":
-      if (item.is_error) {
-        return (
-          <Text color="red">
-            <Text color="red">✗ </Text>
-            {truncate(item.content, 120)}
+        <>
+          <Text>
+            <Text color="gray">⚙ </Text>
+            {item.name}({JSON.stringify(item.input)})
           </Text>
-        );
-      }
-      return (
-        <Text>
-          <Text color="green">→ </Text>
-          {truncate(item.content, 120)}
-        </Text>
+          {item.result &&
+            (item.result.is_error ? (
+              <Text color="red">
+                <Text color="red">✗ </Text>
+                {truncate(item.result.content, 120)}
+              </Text>
+            ) : (
+              <Text>
+                <Text color="green">→ </Text>
+                {truncate(item.result.content, 120)}
+              </Text>
+            ))}
+        </>
       );
+
     case "error":
       return (
         <>

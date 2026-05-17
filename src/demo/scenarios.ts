@@ -33,7 +33,7 @@ async function* longTextScenario(): AsyncGenerator<LlmEvent> {
 
 async function* toolScenario(): AsyncGenerator<LlmEvent> {
   const call = {
-    id: "demo-tool",
+    id: nextCallId("tool"),
     name: "echo",
     input: { text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit" },
   };
@@ -45,17 +45,17 @@ async function* toolScenario(): AsyncGenerator<LlmEvent> {
 async function* multiToolScenario(): AsyncGenerator<LlmEvent> {
   const calls = [
     {
-      id: "demo-multi-tool-1",
+      id: nextCallId("multi-tool"),
       name: "search",
       input: { term: "foo" },
     },
     {
-      id: "demo-multi-tool-2",
+      id: nextCallId("multi-tool"),
       name: "run",
       input: { argv: ["ls", "-la"] },
     },
     {
-      id: "demo-multi-tool-3",
+      id: nextCallId("multi-tool"),
       name: "now",
       input: null,
     },
@@ -71,7 +71,7 @@ async function* multiToolScenario(): AsyncGenerator<LlmEvent> {
 
 async function* toolErrorScenario(): AsyncGenerator<LlmEvent> {
   const call = {
-    id: "demo-tool-error",
+    id: nextCallId("tool-error"),
     name: "error",
     input: {},
   };
@@ -112,3 +112,6 @@ function complete(response: MessagePart[]): LlmEvent {
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+let callCounter = 0;
+const nextCallId = (prefix: string) => `${prefix}-${++callCounter}`;
