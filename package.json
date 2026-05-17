@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "bun run build.ts",
     "demo": "DEMO=1 bun run src/index.ts",
     "check": "biome check --error-on-warnings",
     "check:fix": "biome check --write --unsafe",
