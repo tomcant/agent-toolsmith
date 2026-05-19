@@ -25,7 +25,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "tool-name",
       description: "description",
-      parameters: { type: "object" },
+      inputSchema: { type: "object" },
       code: `return "";`,
     });
 
@@ -42,7 +42,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "existing",
       description: "description",
-      parameters: { type: "object" },
+      inputSchema: { type: "object" },
       code: `return "";`,
     });
 
@@ -57,7 +57,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "has space",
       description: "description",
-      parameters: { type: "object" },
+      inputSchema: { type: "object" },
       code: `return "";`,
     });
 
@@ -72,7 +72,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "tool-name",
       description: "description",
-      parameters: { type: "object" },
+      inputSchema: { type: "object" },
       code: "",
     });
 
@@ -87,7 +87,7 @@ describe("builtin add-tool", () => {
     const result = await tool.execute({
       name: "broken",
       description: "description",
-      parameters: { type: "object" },
+      inputSchema: { type: "object" },
       code: `this is not valid typescript {`,
     });
 

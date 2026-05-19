@@ -1,15 +1,18 @@
-import { Text } from "ink";
-import { Frame } from "./Frame.tsx";
+import { Box, Text } from "ink";
 
 type UserMessageProps = {
   content: string;
-  width: number;
 };
 
-export function UserMessage({ content, width }: UserMessageProps) {
+export function UserMessage({ content }: UserMessageProps) {
   return (
-    <Frame label="you" color="cyan" width={width}>
-      <Text>{content}</Text>
-    </Frame>
+    <Box>
+      <Box flexShrink={0}>
+        <Text color="cyan">{"> "}</Text>
+      </Box>
+      <Box flexGrow={1}>
+        <Text>{content}</Text>
+      </Box>
+    </Box>
   );
 }

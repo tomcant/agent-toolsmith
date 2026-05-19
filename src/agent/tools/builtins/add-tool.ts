@@ -10,7 +10,7 @@ export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
   return {
     name: "add-tool",
     description: "Add a tool for use in this and future sessions.",
-    parameters: {
+    inputSchema: {
       type: "object",
       properties: {
         name: {
@@ -23,7 +23,7 @@ export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
           description:
             "Human-readable summary shown to the model when deciding whether to call the tool.",
         },
-        parameters: {
+        inputSchema: {
           type: "object",
           description:
             "JSON Schema describing the tool's input. Must be an object schema (type: 'object').",
@@ -34,7 +34,7 @@ export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
             "The async function body (TypeScript). Receives `input` as the only parameter. Must return a string.",
         },
       },
-      required: ["name", "description", "parameters", "code"],
+      required: ["name", "description", "inputSchema", "code"],
     },
     execute: async (input) => {
       try {
@@ -70,6 +70,6 @@ function renderTool(metadata: ToolMetadata, code: string): string {
   return template
     .replace("__NAME__", JSON.stringify(metadata.name))
     .replace("__DESCRIPTION__", JSON.stringify(metadata.description))
-    .replace("__SCHEMA__", JSON.stringify(metadata.parameters))
+    .replace("__SCHEMA__", JSON.stringify(metadata.inputSchema))
     .replace("__CODE__", code);
 }

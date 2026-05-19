@@ -4,7 +4,7 @@ import { validateMetadata, validateTool } from "#/agent/tools/validate.ts";
 const validMetadata = {
   name: "tool-name",
   description: "description",
-  parameters: { type: "object" },
+  inputSchema: { type: "object" },
 };
 
 const validTool = {
@@ -30,9 +30,9 @@ describe("tool metadata rules", () => {
     expect(() => validateMetadata({ ...validMetadata, description: "" })).toThrow("description");
   });
 
-  test("a parameters field that is not an object schema is rejected", () => {
-    expect(() => validateMetadata({ ...validMetadata, parameters: { type: "string" } })).toThrow(
-      "parameters",
+  test("an inputSchema field that is not an object schema is rejected", () => {
+    expect(() => validateMetadata({ ...validMetadata, inputSchema: { type: "string" } })).toThrow(
+      "inputSchema",
     );
   });
 });

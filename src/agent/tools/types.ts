@@ -1,15 +1,17 @@
 export type Tool = ToolMetadata & {
-  execute: (input: unknown) => Promise<string>;
+  execute: (input: ToolInput) => Promise<string>;
 };
 
 export type ToolMetadata = {
   name: string;
   description: string;
-  parameters: ToolParameters;
+  inputSchema: ToolInputSchema;
 };
 
-type ToolParameters = {
+type ToolInputSchema = {
   type: "object";
   properties?: Record<string, unknown>;
   required?: string[];
 };
+
+export type ToolInput = Record<string, unknown>;

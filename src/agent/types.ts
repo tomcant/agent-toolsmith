@@ -1,8 +1,8 @@
-import type { Tool } from "./tools/types.ts";
+import type { Tool, ToolInput } from "./tools/types.ts";
 
 export type AgentEvent =
   | { type: "text"; text: string }
-  | { type: "tool_call"; id: string; name: string; input: unknown }
+  | { type: "tool_call"; id: string; name: string; input: ToolInput }
   | { type: "tool_result"; tool_call_id: string; content: string; is_error: boolean };
 
 export type Message = {
@@ -12,12 +12,12 @@ export type Message = {
 
 export type MessagePart =
   | { type: "text"; text: string }
-  | { type: "tool_call"; id: string; name: string; input: unknown }
+  | { type: "tool_call"; id: string; name: string; input: ToolInput }
   | { type: "tool_result"; tool_call_id: string; content: string; is_error: boolean };
 
 export type LlmEvent =
   | { type: "text_delta"; text: string }
-  | { type: "tool_call"; id: string; name: string; input: unknown }
+  | { type: "tool_call"; id: string; name: string; input: ToolInput }
   | { type: "complete"; response: MessagePart[] };
 
 export interface LlmClient {

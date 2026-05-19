@@ -1,4 +1,5 @@
 import type { AgentEvent } from "#/agent";
+import type { ToolInput } from "#/agent/tools/types.ts";
 
 export type TranscriptItem =
   | { kind: "user"; id: number; content: string }
@@ -8,7 +9,7 @@ export type TranscriptItem =
       id: number;
       tool_call_id: string;
       name: string;
-      input: unknown;
+      input: ToolInput;
       result?: {
         content: string;
         is_error: boolean;

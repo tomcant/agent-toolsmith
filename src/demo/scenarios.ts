@@ -49,13 +49,13 @@ async function* multiToolScenario(): AsyncGenerator<LlmEvent> {
     },
     {
       id: nextCallId("multi-tool"),
-      name: "run",
-      input: { argv: ["ls", "-la"] },
+      name: "shell",
+      input: { command: ["ls", "-la"] },
     },
     {
       id: nextCallId("multi-tool"),
       name: "now",
-      input: null,
+      input: {},
     },
   ];
   const parts: MessagePart[] = [];

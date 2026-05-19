@@ -62,10 +62,10 @@ describe("Agent", () => {
     ]);
     expect(inputsReceivedByTool).toEqual([{ key: "value" }]);
     expect(llm.calls[0]?.tools).toMatchObject([
-      { name: "tool-name", description: "description", parameters: { type: "object" } },
+      { name: "tool-name", description: "description", inputSchema: { type: "object" } },
     ]);
     expect(llm.calls[1]?.tools).toMatchObject([
-      { name: "tool-name", description: "description", parameters: { type: "object" } },
+      { name: "tool-name", description: "description", inputSchema: { type: "object" } },
     ]);
     expect(llm.calls[1]?.messages).toEqual([
       {

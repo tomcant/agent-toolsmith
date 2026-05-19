@@ -4,7 +4,7 @@ export function makeTool(name: string, overrides: Partial<Tool> = {}): Tool {
   return {
     name,
     description: "description",
-    parameters: { type: "object" },
+    inputSchema: { type: "object" },
     execute: async () => name,
     ...overrides,
   };

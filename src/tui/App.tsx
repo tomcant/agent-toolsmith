@@ -8,7 +8,6 @@ import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
-import { useTerminalWidth } from "./hooks/useTerminalWidth.ts";
 import { applyAgentEvent, type TranscriptItem } from "./transcript.ts";
 
 type AppProps = {
@@ -17,7 +16,6 @@ type AppProps = {
 
 export function App({ agent }: AppProps) {
   const { exit } = useApp();
-  const width = useTerminalWidth();
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [textInputKey, setTextInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -48,8 +46,8 @@ export function App({ agent }: AppProps) {
     <Box flexDirection="column">
       <Banner />
       {transcript.map((item) => (
-        <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1}>
-          {renderTranscriptItem(item, width)}
+        <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1} paddingX={1}>
+          {renderTranscriptItem(item)}
         </Box>
       ))}
       {busy && (
@@ -57,7 +55,7 @@ export function App({ agent }: AppProps) {
           <Spinner label="Thinking..." />
         </Box>
       )}
-      <Box marginTop={1} borderStyle="round" borderColor="cyan" borderDimColor paddingX={1}>
+      <Box marginTop={1} paddingX={1} borderStyle="round" borderColor="cyan" borderDimColor>
         <Text color="cyan" bold>
           ❯{" "}
         </Text>
@@ -74,15 +72,15 @@ export function App({ agent }: AppProps) {
   );
 }
 
-function renderTranscriptItem(item: TranscriptItem, width: number) {
+function renderTranscriptItem(item: TranscriptItem) {
   switch (item.kind) {
     case "user":
-      return <UserMessage content={item.content} width={width} />;
+      return <UserMessage content={item.content} />;
     case "assistant":
-      return <AssistantMessage content={item.content} width={width} />;
+      return <AssistantMessage content={item.content} />;
     case "tool_call":
       return <ToolCall name={item.name} input={item.input} result={item.result} />;
     case "error":
-      return <ErrorMessage content={item.content} width={width} />;
+      return <ErrorMessage content={item.content} />;
   }
 }

@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Tool } from "#/agent/tools/types.ts";
+import type { Tool, ToolInput } from "#/agent/tools/types.ts";
 import type { LlmClient, LlmEvent, Message, MessagePart } from "#/agent/types.ts";
 
 export class AnthropicLlmClient implements LlmClient {
@@ -101,7 +101,7 @@ function toSdkTool(tool: Tool): Anthropic.Tool {
   return {
     name: tool.name,
     description: tool.description,
-    input_schema: tool.parameters,
+    input_schema: tool.inputSchema,
   };
 }
 
@@ -121,7 +121,7 @@ function fromSdkMessageContent(content: Anthropic.ContentBlock[]): MessagePart[]
           type: "tool_call",
           id: block.id,
           name: block.name,
-          input: block.input,
+          input: block.input as ToolInput,
         },
       ];
     }

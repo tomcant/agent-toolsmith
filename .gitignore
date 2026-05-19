@@ -1,5 +1,5 @@
 # compiled binary
-agent
+/agent
 
 # dependencies (bun install)
 node_modules

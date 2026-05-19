@@ -1,15 +1,20 @@
-import { Text } from "ink";
-import { Frame } from "./Frame.tsx";
+import { Box, Text } from "ink";
 
 type ErrorMessageProps = {
   content: string;
-  width: number;
 };
 
-export function ErrorMessage({ content, width }: ErrorMessageProps) {
+export function ErrorMessage({ content }: ErrorMessageProps) {
   return (
-    <Frame label="error" color="red" width={width}>
-      <Text color="red">{content}</Text>
-    </Frame>
+    <Box>
+      <Box flexShrink={0}>
+        <Text color="red" bold>
+          {"✗ "}
+        </Text>
+      </Box>
+      <Box flexGrow={1}>
+        <Text color="red">{content}</Text>
+      </Box>
+    </Box>
   );
 }

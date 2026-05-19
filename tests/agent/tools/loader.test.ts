@@ -22,7 +22,7 @@ describe("loading a tool from a file", () => {
       `export const tool = {
         name: "tool-name",
         description: "description",
-        parameters: { type: "object" },
+        inputSchema: { type: "object" },
         execute: async () => "",
       };`,
     );
@@ -53,7 +53,7 @@ describe("loading a tool from a file", () => {
       `export const tool = {
         name: "has space",
         description: "description",
-        parameters: { type: "object" },
+        inputSchema: { type: "object" },
         execute: async () => "",
       };`,
     );

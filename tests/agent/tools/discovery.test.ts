@@ -45,7 +45,7 @@ describe("discovering tools", () => {
       `export const tool = {
         name: "tool-name",
         description: "description",
-        parameters: { type: "object" },
+        inputSchema: { type: "object" },
         execute: async () => "",
       };`,
     );
@@ -72,7 +72,7 @@ async function writeTool(dir: string, name: string): Promise<void> {
   const source = `export const tool = {
     name: "${name}",
     description: "description",
-    parameters: { type: "object" },
+    inputSchema: { type: "object" },
     execute: async () => "",
   };`;
   await Bun.write(join(dir, `${name}.ts`), source);
