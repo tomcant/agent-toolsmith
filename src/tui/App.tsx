@@ -21,6 +21,10 @@ export function App({ agent }: AppProps) {
   const [busy, setBusy] = useState(false);
 
   const handleSubmit = async (value: string) => {
+    if (value.trim() === "") {
+      return;
+    }
+
     if (isExitCommand(value)) {
       exit();
       return;
