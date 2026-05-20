@@ -12,7 +12,7 @@ const validTool = {
   execute: async () => "",
 };
 
-describe("tool metadata rules", () => {
+describe("validating tool metadata", () => {
   test("valid metadata is accepted", () => {
     expect(() => validateMetadata(validMetadata)).not.toThrow();
   });
@@ -37,7 +37,7 @@ describe("tool metadata rules", () => {
   });
 });
 
-describe("loaded tool rules", () => {
+describe("validating tools", () => {
   test("a valid tool is accepted", () => {
     expect(() => validateTool(validTool)).not.toThrow();
   });

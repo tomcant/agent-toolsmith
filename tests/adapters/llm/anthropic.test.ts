@@ -4,7 +4,7 @@ import { AnthropicLlmClient } from "#/adapters/llm/anthropic.ts";
 import { sseFetchSpy } from "../../doubles/sse-fetch-spy.ts";
 import { collect, makeTool } from "../../helpers.ts";
 
-describe("AnthropicLlmClient", () => {
+describe("Anthropic LLM client", () => {
   test("streams text deltas and tool calls, then emits the assembled response", async () => {
     const fetch = sseFetchSpy([
       [

@@ -1,4 +1,4 @@
-import type { Tool, ToolInput } from "./tools/types.ts";
+import type { ToolInput, ToolMetadata } from "./tools/types.ts";
 
 export type AgentEvent =
   | { type: "text"; text: string }
@@ -21,5 +21,5 @@ export type LlmEvent =
   | { type: "complete"; response: MessagePart[] };
 
 export interface LlmClient {
-  send(messages: Message[], tools?: Tool[]): AsyncGenerator<LlmEvent>;
+  send(messages: Message[], tools?: ToolMetadata[]): AsyncGenerator<LlmEvent>;
 }

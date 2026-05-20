@@ -5,24 +5,48 @@ import { join } from "node:path";
 import { Agent } from "#/agent";
 import { SessionLog } from "#/agent/session/log.ts";
 import { ToolRegistry } from "#/agent/tools/registry.ts";
+import { ToolStore } from "#/agent/tools/store.ts";
 import { LlmClientSpy } from "../doubles/llm-client-spy.ts";
-import { collect, makeTool } from "../helpers.ts";
+import { collect, makeTool, readSessionLog } from "../helpers.ts";
 
-describe("Agent", () => {
+describe("agent turns", () => {
+  let toolDir: string;
+  let registry: ToolRegistry;
   let sessionDir: string;
   let sessionLog: SessionLog;
 
   beforeEach(async () => {
+    toolDir = await mkdtemp(join(tmpdir(), "tools-"));
+    registry = new ToolRegistry(new ToolStore(toolDir));
     sessionDir = await mkdtemp(join(tmpdir(), "session-"));
     sessionLog = new SessionLog(sessionDir);
   });
 
   afterEach(async () => {
+    await rm(toolDir, { recursive: true, force: true });
     await rm(sessionDir, { recursive: true, force: true });
     setSystemTime();
   });
 
-  test("runs tool calls and feeds their results back until the model ends its turn", async () => {
+  test("assistant text is streamed", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "text_delta", text: "Re" },
+        { type: "text_delta", text: "ply" },
+        { type: "complete", response: [{ type: "text", text: "Reply" }] },
+      ],
+    ]);
+    const agent = new Agent(llm, registry, sessionLog);
+
+    const events = await collect(agent.turn("User message"));
+
+    expect(events).toEqual([
+      { type: "text", text: "Re" },
+      { type: "text", text: "ply" },
+    ]);
+  });
+
+  test("tool calls are executed and their results are fed back to the model", async () => {
     const llm = new LlmClientSpy([
       [
         { type: "text_delta", text: "Reply 1" },
@@ -40,7 +64,6 @@ describe("Agent", () => {
         { type: "complete", response: [{ type: "text", text: "Reply 2" }] },
       ],
     ]);
-    const registry = new ToolRegistry();
     const inputsReceivedByTool: unknown[] = [];
     registry.register(
       makeTool("tool-name", {
@@ -64,9 +87,6 @@ describe("Agent", () => {
     expect(llm.calls[0]?.tools).toMatchObject([
       { name: "tool-name", description: "description", inputSchema: { type: "object" } },
     ]);
-    expect(llm.calls[1]?.tools).toMatchObject([
-      { name: "tool-name", description: "description", inputSchema: { type: "object" } },
-    ]);
     expect(llm.calls[1]?.messages).toEqual([
       {
         role: "user",
@@ -86,15 +106,15 @@ describe("Agent", () => {
     ]);
   });
 
-  test("reports failing tools to the caller and keeps going until the model ends its turn", async () => {
+  test("tool failures are reported and the turn continues", async () => {
     const llm = new LlmClientSpy([
       [
-        { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+        { type: "tool_call", id: "t1", name: "throwing-tool", input: {} },
         { type: "tool_call", id: "t2", name: "missing", input: {} },
         {
           type: "complete",
           response: [
-            { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+            { type: "tool_call", id: "t1", name: "throwing-tool", input: {} },
             { type: "tool_call", id: "t2", name: "missing", input: {} },
           ],
         },
@@ -104,9 +124,8 @@ describe("Agent", () => {
         { type: "complete", response: [{ type: "text", text: "Reply" }] },
       ],
     ]);
-    const registry = new ToolRegistry();
     registry.register(
-      makeTool("tool-name", {
+      makeTool("throwing-tool", {
         execute: async () => {
           throw new Error("error");
         },
@@ -117,7 +136,7 @@ describe("Agent", () => {
     const events = await collect(agent.turn("User message"));
 
     expect(events).toEqual([
-      { type: "tool_call", id: "t1", name: "tool-name", input: {} },
+      { type: "tool_call", id: "t1", name: "throwing-tool", input: {} },
       { type: "tool_call", id: "t2", name: "missing", input: {} },
       { type: "tool_result", tool_call_id: "t1", content: "error", is_error: true },
       {
@@ -130,26 +149,7 @@ describe("Agent", () => {
     ]);
   });
 
-  test("streams assistant text through the turn events", async () => {
-    const llm = new LlmClientSpy([
-      [
-        { type: "text_delta", text: "Re" },
-        { type: "text_delta", text: "ply" },
-        { type: "complete", response: [{ type: "text", text: "Reply" }] },
-      ],
-    ]);
-    const agent = new Agent(llm, new ToolRegistry(), sessionLog);
-    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
-
-    const events = await collect(agent.turn("User message"));
-
-    expect(events).toEqual([
-      { type: "text", text: "Re" },
-      { type: "text", text: "ply" },
-    ]);
-  });
-
-  test("tools registered during a turn are immediately available", async () => {
+  test("tools registered mid-turn are immediately available", async () => {
     const llm = new LlmClientSpy([
       [
         { type: "tool_call", id: "t1", name: "register-tool", input: {} },
@@ -163,7 +163,6 @@ describe("Agent", () => {
         { type: "complete", response: [{ type: "text", text: "Reply" }] },
       ],
     ]);
-    const registry = new ToolRegistry();
     registry.register(
       makeTool("register-tool", {
         execute: async () => {
@@ -180,7 +179,7 @@ describe("Agent", () => {
     expect(llm.calls[1]?.tools?.map((t) => t.name)).toEqual(["register-tool", "new-tool"]);
   });
 
-  test("agent activities are recorded in the session log", async () => {
+  test("turn activity is recorded in the session log", async () => {
     const llm = new LlmClientSpy([
       [
         { type: "text_delta", text: "Reply 1" },
@@ -198,7 +197,6 @@ describe("Agent", () => {
         { type: "complete", response: [{ type: "text", text: "Reply 2" }] },
       ],
     ]);
-    const registry = new ToolRegistry();
     registry.register(makeTool("tool-name", { execute: async () => "result" }));
     const agent = new Agent(llm, registry, sessionLog);
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
@@ -232,34 +230,9 @@ describe("Agent", () => {
     ]);
   });
 
-  test("a failed turn does not appear in the conversation", async () => {
-    const llm = new LlmClientSpy([
-      [
-        { type: "text_delta", text: "Reply" },
-        { type: "complete", response: [{ type: "text", text: "Reply" }] },
-      ],
-      new Error("error"),
-      [
-        { type: "text_delta", text: "Reply 3" },
-        { type: "complete", response: [{ type: "text", text: "Reply 3" }] },
-      ],
-    ]);
-    const agent = new Agent(llm, new ToolRegistry(), sessionLog);
-
-    await collect(agent.turn("User message 1"));
-    await expect(collect(agent.turn("User message 2"))).rejects.toThrow("error");
-    await collect(agent.turn("User message 3"));
-
-    expect(llm.calls[2]?.messages).toEqual([
-      { role: "user", content: [{ type: "text", text: "User message 1" }] },
-      { role: "assistant", content: [{ type: "text", text: "Reply" }] },
-      { role: "user", content: [{ type: "text", text: "User message 3" }] },
-    ]);
-  });
-
-  test("an error during a turn is recorded in the session log", async () => {
+  test("turn errors are recorded in the session log", async () => {
     const llm = new LlmClientSpy([new Error("error")]);
-    const agent = new Agent(llm, new ToolRegistry(), sessionLog);
+    const agent = new Agent(llm, registry, sessionLog);
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
     await expect(collect(agent.turn("User message"))).rejects.toThrow("error");
@@ -273,12 +246,65 @@ describe("Agent", () => {
       { time: "2026-04-22T12:00:00.000Z", kind: "error", message: "error" },
     ]);
   });
-});
 
-async function readSessionLog(sessionDir: string): Promise<unknown[]> {
-  const contents = await Bun.file(join(sessionDir, "session.jsonl")).text();
-  return contents
-    .trim()
-    .split("\n")
-    .map((l) => JSON.parse(l));
-}
+  test("a stream that ends without a response is reported as an error", async () => {
+    const llm = new LlmClientSpy([[{ type: "text_delta", text: "Reply" }]]);
+    const agent = new Agent(llm, registry, sessionLog);
+    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
+
+    await expect(collect(agent.turn("User message"))).rejects.toThrow(
+      "LLM stream ended without a response",
+    );
+
+    expect(await readSessionLog(sessionDir)).toEqual([
+      {
+        time: "2026-04-22T12:00:00.000Z",
+        role: "user",
+        content: [{ type: "text", text: "User message" }],
+      },
+      {
+        time: "2026-04-22T12:00:00.000Z",
+        kind: "error",
+        message: "LLM stream ended without a response",
+      },
+    ]);
+  });
+
+  test("failed turns are excluded from the conversation", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "text_delta", text: "Reply" },
+        { type: "complete", response: [{ type: "text", text: "Reply" }] },
+      ],
+      new Error("error"),
+      [
+        { type: "text_delta", text: "Reply 3" },
+        { type: "complete", response: [{ type: "text", text: "Reply 3" }] },
+      ],
+    ]);
+    const agent = new Agent(llm, registry, sessionLog);
+
+    await collect(agent.turn("User message 1"));
+    await expect(collect(agent.turn("User message 2"))).rejects.toThrow("error");
+    await collect(agent.turn("User message 3"));
+
+    expect(llm.calls[2]?.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "User message 1" }] },
+      { role: "assistant", content: [{ type: "text", text: "Reply" }] },
+      { role: "user", content: [{ type: "text", text: "User message 3" }] },
+    ]);
+  });
+
+  test("registered tools are exposed as metadata", () => {
+    registry.register(makeTool("t1", { description: "first" }));
+    registry.register(makeTool("t2", { description: "second" }));
+    const agent = new Agent(new LlmClientSpy([]), registry, sessionLog);
+
+    const tools = agent.listTools();
+
+    expect(tools).toEqual([
+      { name: "t1", description: "first", inputSchema: { type: "object" } },
+      { name: "t2", description: "second", inputSchema: { type: "object" } },
+    ]);
+  });
+});

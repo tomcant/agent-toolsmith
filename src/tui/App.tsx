@@ -1,12 +1,14 @@
 import { Spinner, TextInput } from "@inkjs/ui";
-import { Box, Text, useApp } from "ink";
-import { useState } from "react";
+import { Box, Text, useApp, useInput } from "ink";
+import { type ReactNode, useState } from "react";
 import type { Agent } from "#/agent";
-import { isExitCommand } from "./commands.ts";
+import { type Command, parseCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
 import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
+import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
+import { ToolList } from "./components/ToolList.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
 import { applyAgentEvent, type TranscriptItem } from "./transcript.ts";
 
@@ -16,26 +18,60 @@ type AppProps = {
 
 export function App({ agent }: AppProps) {
   const { exit } = useApp();
-  const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [textInputKey, setTextInputKey] = useState(0);
+  const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+  const [overlay, setOverlay] = useState<ReactNode>(null);
   const [busy, setBusy] = useState(false);
 
-  const handleSubmit = async (value: string) => {
-    if (value.trim() === "") {
+  useInput((_input, key) => {
+    if (key.escape && overlay) {
+      setOverlay(null);
+    }
+  });
+
+  const appendSystemMessage = (content: string) => {
+    setTranscript((prev) => [...prev, { kind: "system", id: prev.length, content }]);
+  };
+
+  const handleCommand = async (command: Command) => {
+    switch (command.kind) {
+      case "tools_list":
+        setOverlay(<ToolList tools={agent.listTools()} />);
+        return;
+      case "tools_remove":
+        await agent.removeTool(command.name);
+        appendSystemMessage(`Removed tool '${command.name}'`);
+        return;
+      case "exit":
+        exit();
+        return;
+    }
+  };
+
+  const handleSubmit = async (input: string) => {
+    if (input.trim() === "") {
       return;
     }
 
-    if (isExitCommand(value)) {
-      exit();
-      return;
-    }
-
-    setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: value }]);
     setTextInputKey((k) => k + 1);
+    setOverlay(null);
+
+    try {
+      const command = parseCommand(input);
+      if (command) {
+        await handleCommand(command);
+        return;
+      }
+    } catch (err) {
+      appendSystemMessage(err instanceof Error ? err.message : String(err));
+      return;
+    }
+
+    setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: input }]);
     setBusy(true);
 
     try {
-      for await (const event of agent.turn(value)) {
+      for await (const event of agent.turn(input)) {
         setTranscript((prev) => applyAgentEvent(prev, event));
       }
     } catch (err) {
@@ -47,19 +83,25 @@ export function App({ agent }: AppProps) {
   };
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" gap={1}>
       <Banner />
       {transcript.map((item) => (
-        <Box key={`${item.kind}-${item.id}`} flexDirection="column" marginTop={1} paddingX={1}>
+        <Box key={`${item.kind}-${item.id}`} paddingX={1}>
           {renderTranscriptItem(item)}
         </Box>
       ))}
       {busy && (
-        <Box marginTop={1} paddingX={1}>
+        <Box paddingX={1}>
           <Spinner label="Thinking..." />
         </Box>
       )}
-      <Box marginTop={1} paddingX={1} borderStyle="round" borderColor="cyan" borderDimColor>
+      {overlay && (
+        <Box flexDirection="column" gap={1} paddingX={1}>
+          {overlay}
+          <Text dimColor>Esc to close</Text>
+        </Box>
+      )}
+      <Box paddingX={1} borderStyle="round" borderColor="cyan" borderDimColor>
         <Text color="cyan" bold>
           ❯{" "}
         </Text>
@@ -84,6 +126,8 @@ function renderTranscriptItem(item: TranscriptItem) {
       return <AssistantMessage content={item.content} />;
     case "tool_call":
       return <ToolCall name={item.name} input={item.input} result={item.result} />;
+    case "system":
+      return <SystemMessage content={item.content} />;
     case "error":
       return <ErrorMessage content={item.content} />;
   }

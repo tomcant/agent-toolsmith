@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import type { ToolInput } from "#/agent/tools/types.ts";
+import { truncate } from "../utils.ts";
 
 type ToolCallProps = {
   name: string;
@@ -55,8 +56,4 @@ function formatValue(value: unknown, max = 60): string {
 function summarise(content: string, max = 100): string {
   const firstLine = content.split("\n").find((line) => line.trim()) ?? "";
   return truncate(firstLine, max);
-}
-
-function truncate(s: string, max: number): string {
-  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }

@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Tool, ToolInput } from "#/agent/tools/types.ts";
+import type { ToolInput, ToolMetadata } from "#/agent/tools/types.ts";
 import type { LlmClient, LlmEvent, Message, MessagePart } from "#/agent/types.ts";
 
 export class AnthropicLlmClient implements LlmClient {
@@ -9,7 +9,7 @@ export class AnthropicLlmClient implements LlmClient {
     private readonly systemPrompt?: string,
   ) {}
 
-  async *send(messages: Message[], tools?: Tool[]): AsyncGenerator<LlmEvent> {
+  async *send(messages: Message[], tools?: ToolMetadata[]): AsyncGenerator<LlmEvent> {
     const stream = this.sdk.messages.stream({
       model: this.model,
       max_tokens: 8192,
@@ -97,7 +97,7 @@ function toSdkMessage(message: Message): Anthropic.MessageParam {
   };
 }
 
-function toSdkTool(tool: Tool): Anthropic.Tool {
+function toSdkTool(tool: ToolMetadata): Anthropic.Tool {
   return {
     name: tool.name,
     description: tool.description,

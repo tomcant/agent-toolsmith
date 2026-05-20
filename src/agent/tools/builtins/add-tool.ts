@@ -1,12 +1,8 @@
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
-import { loadTool } from "../loader.ts";
 import type { ToolRegistry } from "../registry.ts";
-import type { Tool, ToolMetadata } from "../types.ts";
-import { validateMetadata } from "../validate.ts";
-import template from "./tool.ts.tpl" with { type: "text" };
+import type { AddToolInput } from "../store.ts";
+import type { Tool } from "../types.ts";
 
-export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
+export function addTool(toolRegistry: ToolRegistry): Tool {
   return {
     name: "add-tool",
     description: "Add a tool for use in this and future sessions.",
@@ -38,38 +34,12 @@ export function addTool(toolsDir: string, toolRegistry: ToolRegistry): Tool {
     },
     execute: async (input) => {
       try {
-        validateMetadata(input);
+        await toolRegistry.add(input as AddToolInput);
+        return `Added tool '${input.name}'`;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return `Error: ${message}`;
       }
-
-      const { code } = input as { code?: unknown };
-      if (typeof code !== "string" || code.length === 0) {
-        return "Error: code must be a non-empty string";
-      }
-
-      const path = join(toolsDir, `${input.name}.ts`);
-      await Bun.write(path, renderTool(input, code));
-
-      try {
-        const tool = await loadTool(path);
-        toolRegistry.register(tool);
-      } catch (err) {
-        await rm(path, { force: true });
-        const message = err instanceof Error ? err.message : String(err);
-        return `Error: ${message}`;
-      }
-
-      return `Added tool '${input.name}'`;
     },
   };
-}
-
-function renderTool(metadata: ToolMetadata, code: string): string {
-  return template
-    .replace("__NAME__", JSON.stringify(metadata.name))
-    .replace("__DESCRIPTION__", JSON.stringify(metadata.description))
-    .replace("__SCHEMA__", JSON.stringify(metadata.inputSchema))
-    .replace("__CODE__", code);
 }

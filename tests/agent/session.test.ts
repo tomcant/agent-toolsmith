@@ -1,10 +1,43 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SessionLog } from "#/agent/session/log.ts";
+import { createSessionDir } from "#/agent/session/session.ts";
+import { readSessionLog } from "../helpers.ts";
 
-describe("session log", () => {
+describe("directory", () => {
+  let sessionsRootDir: string;
+
+  beforeEach(async () => {
+    sessionsRootDir = await mkdtemp(join(tmpdir(), "sessions-root-"));
+  });
+
+  afterEach(async () => {
+    await rm(sessionsRootDir, { recursive: true, force: true });
+    setSystemTime();
+  });
+
+  test("each session gets a directory named by its start time", async () => {
+    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
+
+    const path = await createSessionDir(sessionsRootDir);
+
+    expect(path.startsWith(join(sessionsRootDir, "2026-04-22T12-00-00-000Z-"))).toBe(true);
+    expect((await stat(path)).isDirectory()).toBe(true);
+  });
+
+  test("two sessions started at the same time get different directories", async () => {
+    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
+
+    const first = await createSessionDir(sessionsRootDir);
+    const second = await createSessionDir(sessionsRootDir);
+
+    expect(first).not.toBe(second);
+  });
+});
+
+describe("log", () => {
   let sessionDir: string;
 
   beforeEach(async () => {
@@ -37,12 +70,7 @@ describe("session log", () => {
     });
     await log.write({ kind: "error", message: "error" });
 
-    const contents = await Bun.file(join(sessionDir, "session.jsonl")).text();
-    const lines = contents
-      .trim()
-      .split("\n")
-      .map((l) => JSON.parse(l));
-    expect(lines).toEqual([
+    expect(await readSessionLog(sessionDir)).toEqual([
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",

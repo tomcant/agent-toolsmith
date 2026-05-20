@@ -15,6 +15,7 @@ export type TranscriptItem =
         is_error: boolean;
       };
     }
+  | { kind: "system"; id: number; content: string }
   | { kind: "error"; id: number; content: string };
 
 export function applyAgentEvent(transcript: TranscriptItem[], event: AgentEvent): TranscriptItem[] {

@@ -1,5 +1,6 @@
 import type { SessionLog } from "./session/log.ts";
 import type { ToolRegistry } from "./tools/registry.ts";
+import type { ToolMetadata } from "./tools/types.ts";
 import type { AgentEvent, LlmClient, Message, MessagePart } from "./types.ts";
 
 type ToolResult = { content: string; is_error: boolean };
@@ -13,6 +14,14 @@ export class Agent {
     private readonly log: SessionLog,
   ) {}
 
+  listTools(): ToolMetadata[] {
+    return this.registry.list().map(({ execute, ...meta }) => meta);
+  }
+
+  async removeTool(name: string): Promise<void> {
+    await this.registry.remove(name);
+  }
+
   async *turn(input: string): AsyncGenerator<AgentEvent> {
     const userMessage: Message = {
       role: "user",
@@ -23,7 +32,7 @@ export class Agent {
 
     while (true) {
       try {
-        const stream = this.client.send(messages, this.registry.list());
+        const stream = this.client.send(messages, this.listTools());
         let finalResponse: MessagePart[] | undefined;
 
         for await (const event of stream) {

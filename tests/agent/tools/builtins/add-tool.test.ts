@@ -1,26 +1,26 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { addTool } from "#/agent/tools/builtins/add-tool.ts";
 import { ToolRegistry } from "#/agent/tools/registry.ts";
-import { makeTool } from "../../../helpers.ts";
+import { ToolStore } from "#/agent/tools/store.ts";
 
 describe("builtin add-tool", () => {
-  let toolsDir: string;
+  let toolDir: string;
   let toolRegistry: ToolRegistry;
 
   beforeEach(async () => {
-    toolsDir = await mkdtemp(join(tmpdir(), "tools-"));
-    toolRegistry = new ToolRegistry();
+    toolDir = await mkdtemp(join(tmpdir(), "tools-"));
+    toolRegistry = new ToolRegistry(new ToolStore(toolDir));
   });
 
   afterEach(async () => {
-    await rm(toolsDir, { recursive: true, force: true });
+    await rm(toolDir, { recursive: true, force: true });
   });
 
-  test("adds a tool to the registry", async () => {
-    const tool = addTool(toolsDir, toolRegistry);
+  test("a successful add returns a confirmation message", async () => {
+    const tool = addTool(toolRegistry);
 
     const result = await tool.execute({
       name: "tool-name",
@@ -30,44 +30,10 @@ describe("builtin add-tool", () => {
     });
 
     expect(result).toBe("Added tool 'tool-name'");
-    expect(toolRegistry.get("tool-name")?.name).toBe("tool-name");
-    expect(await readdir(toolsDir)).toEqual(["tool-name.ts"]);
   });
 
-  test("a name that is already registered is rejected", async () => {
-    const existing = makeTool("existing");
-    toolRegistry.register(existing);
-    const tool = addTool(toolsDir, toolRegistry);
-
-    const result = await tool.execute({
-      name: "existing",
-      description: "description",
-      inputSchema: { type: "object" },
-      code: `return "";`,
-    });
-
-    expect(result.toLowerCase()).toContain("already registered");
-    expect(toolRegistry.get("existing")).toBe(existing);
-    expect(await readdir(toolsDir)).toEqual([]);
-  });
-
-  test("a name that violates the allowed pattern is rejected", async () => {
-    const tool = addTool(toolsDir, toolRegistry);
-
-    const result = await tool.execute({
-      name: "has space",
-      description: "description",
-      inputSchema: { type: "object" },
-      code: `return "";`,
-    });
-
-    expect(result.toLowerCase()).toContain("name");
-    expect(toolRegistry.get("has space")).toBeUndefined();
-    expect(await readdir(toolsDir)).toEqual([]);
-  });
-
-  test("an empty code string is rejected", async () => {
-    const tool = addTool(toolsDir, toolRegistry);
+  test("an error from the registry is surfaced with an 'Error:' prefix", async () => {
+    const tool = addTool(toolRegistry);
 
     const result = await tool.execute({
       name: "tool-name",
@@ -76,23 +42,6 @@ describe("builtin add-tool", () => {
       code: "",
     });
 
-    expect(result.toLowerCase()).toContain("code");
-    expect(toolRegistry.get("tool-name")).toBeUndefined();
-    expect(await readdir(toolsDir)).toEqual([]);
-  });
-
-  test("a tool that cannot be loaded is rejected", async () => {
-    const tool = addTool(toolsDir, toolRegistry);
-
-    const result = await tool.execute({
-      name: "broken",
-      description: "description",
-      inputSchema: { type: "object" },
-      code: `this is not valid typescript {`,
-    });
-
-    expect(result.toLowerCase()).toContain("error");
-    expect(toolRegistry.get("broken")).toBeUndefined();
-    expect(await readdir(toolsDir)).toEqual([]);
+    expect(result.startsWith("Error: ")).toBe(true);
   });
 });
