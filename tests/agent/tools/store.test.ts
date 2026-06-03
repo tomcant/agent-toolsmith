@@ -53,6 +53,30 @@ describe("tool storage", () => {
     expect(await tool.execute({})).toBe("x");
   });
 
+  test("a tool's name comes from its filename", async () => {
+    await Bun.write(
+      join(toolDir, "from-filename.ts"),
+      'export const tool = { description: "d", inputSchema: { type: "object" }, execute: async () => "x" };',
+    );
+
+    const [listed] = await store.list();
+    const loaded = await store.load("from-filename");
+
+    expect(listed?.name).toBe("from-filename");
+    expect(loaded.name).toBe("from-filename");
+  });
+
+  test("a file whose name is not a valid tool name is skipped", async () => {
+    await Bun.write(
+      join(toolDir, "Bad Name.ts"),
+      'export const tool = { description: "d", inputSchema: { type: "object" }, execute: async () => "x" };',
+    );
+
+    const tools = await store.list();
+
+    expect(tools).toEqual([]);
+  });
+
   test("unable to load a tool with an unknown name", async () => {
     await expect(store.load("missing")).rejects.toThrow();
   });

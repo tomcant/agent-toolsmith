@@ -1,3 +1,4 @@
+import { isObject } from "#/utils.ts";
 import type { Tool, ToolMetadata } from "./types.ts";
 
 const NAME_PATTERN = /^[a-z0-9-]{1,64}$/;
@@ -28,8 +29,4 @@ export function validateMetadata(metadata: unknown): asserts metadata is ToolMet
   if (!isObject(inputSchema) || inputSchema.type !== "object") {
     throw new Error("tool inputSchema must be an object schema (type: 'object')");
   }
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

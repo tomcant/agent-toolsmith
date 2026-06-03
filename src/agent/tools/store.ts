@@ -1,5 +1,6 @@
 import { readdir, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { isObject } from "#/utils.ts";
 import template from "./builtins/tool.ts.tpl" with { type: "text" };
 import type { Tool, ToolMetadata } from "./types.ts";
 import { validateTool } from "./validate.ts";
@@ -47,13 +48,15 @@ export class ToolStore {
 
 async function loadTool(filePath: string): Promise<Tool> {
   const module = (await import(filePath)) as { tool?: unknown };
-  validateTool(module.tool);
-  return module.tool;
+  const tool = isObject(module.tool)
+    ? { ...module.tool, name: basename(filePath, ".ts") }
+    : module.tool;
+  validateTool(tool);
+  return tool;
 }
 
 function renderTool(input: AddToolInput): string {
   return template
-    .replace("__NAME__", JSON.stringify(input.name))
     .replace("__DESCRIPTION__", JSON.stringify(input.description))
     .replace("__SCHEMA__", JSON.stringify(input.inputSchema))
     .replace("__CODE__", input.code);
