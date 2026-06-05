@@ -90,6 +90,17 @@ describe("tool storage", () => {
     expect(await tool.execute({})).toBe("new");
   });
 
+  test("reloading a rewritten tool reflects the latest code", async () => {
+    await store.write(makeAddToolInput("tool-name", { code: 'return "old";' }));
+    const before = await store.load("tool-name");
+
+    await store.write(makeAddToolInput("tool-name", { code: 'return "new";' }));
+    const after = await store.load("tool-name");
+
+    expect(await before.execute({})).toBe("old");
+    expect(await after.execute({})).toBe("new");
+  });
+
   test("tools can be deleted", async () => {
     await store.write(makeAddToolInput("tool-name"));
 

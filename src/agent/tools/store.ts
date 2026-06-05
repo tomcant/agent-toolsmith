@@ -46,8 +46,12 @@ export class ToolStore {
   }
 }
 
+// Dynamic imports are cached by specifier, so a tool re-added at the same path
+// would otherwise serve its previous code. A unique query forces a fresh module.
+let revision = 0;
+
 async function loadTool(filePath: string): Promise<Tool> {
-  const module = (await import(filePath)) as { tool?: unknown };
+  const module = (await import(`${filePath}?rev=${revision++}`)) as { tool?: unknown };
   const tool = isObject(module.tool)
     ? { ...module.tool, name: basename(filePath, ".ts") }
     : module.tool;
