@@ -2,9 +2,9 @@ import type { ToolRegistry } from "../registry.ts";
 import type { AddToolInput } from "../store.ts";
 import type { Tool } from "../types.ts";
 
-export function addTool(toolRegistry: ToolRegistry): Tool {
+export function evolve(toolRegistry: ToolRegistry): Tool {
   return {
-    name: "add-tool",
+    name: "evolve",
     description: "Add a tool for use in this and future sessions.",
     inputSchema: {
       type: "object",

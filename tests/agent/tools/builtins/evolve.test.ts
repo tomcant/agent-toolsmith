@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { addTool } from "#/agent/tools/builtins/add-tool.ts";
+import { evolve } from "#/agent/tools/builtins/evolve.ts";
 import { ToolRegistry } from "#/agent/tools/registry.ts";
 import { ToolStore } from "#/agent/tools/store.ts";
 
-describe("builtin add-tool", () => {
+describe("builtin evolve tool", () => {
   let toolDir: string;
   let toolRegistry: ToolRegistry;
 
@@ -19,8 +19,8 @@ describe("builtin add-tool", () => {
     await rm(toolDir, { recursive: true, force: true });
   });
 
-  test("a successful add returns a confirmation message", async () => {
-    const tool = addTool(toolRegistry);
+  test("a successful call returns a confirmation message", async () => {
+    const tool = evolve(toolRegistry);
 
     const result = await tool.execute({
       name: "tool-name",
@@ -33,7 +33,7 @@ describe("builtin add-tool", () => {
   });
 
   test("an error from the registry is surfaced with an 'Error:' prefix", async () => {
-    const tool = addTool(toolRegistry);
+    const tool = evolve(toolRegistry);
 
     const result = await tool.execute({
       name: "tool-name",
