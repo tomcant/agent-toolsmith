@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent } from "#/agent";
 import { SessionLog } from "#/agent/session/log.ts";
+import { evolve } from "#/agent/tools/builtins/evolve.ts";
 import { ToolRegistry } from "#/agent/tools/registry.ts";
 import { ToolStore } from "#/agent/tools/store.ts";
 import { LlmClientSpy } from "../doubles/llm-client-spy.ts";
@@ -306,5 +307,12 @@ describe("agent turns", () => {
       { name: "t1", description: "first", inputSchema: { type: "object" } },
       { name: "t2", description: "second", inputSchema: { type: "object" } },
     ]);
+  });
+
+  test("the evolve tool is hidden from the listed tools", () => {
+    registry.register(evolve(registry));
+    const agent = new Agent(new LlmClientSpy([]), registry, sessionLog);
+
+    expect(agent.listTools().map((t) => t.name)).toEqual([]);
   });
 });

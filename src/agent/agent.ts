@@ -15,7 +15,7 @@ export class Agent {
   ) {}
 
   listTools(): ToolMetadata[] {
-    return this.registry.list().map(({ execute, ...meta }) => meta);
+    return this.toolMetadata().filter((tool) => tool.name !== "evolve");
   }
 
   async removeTool(name: string): Promise<void> {
@@ -32,7 +32,7 @@ export class Agent {
 
     while (true) {
       try {
-        const stream = this.client.send(messages, this.listTools());
+        const stream = this.client.send(messages, this.toolMetadata());
         let finalResponse: MessagePart[] | undefined;
 
         for await (const event of stream) {
@@ -84,6 +84,10 @@ export class Agent {
     }
 
     this.messages = messages;
+  }
+
+  private toolMetadata(): ToolMetadata[] {
+    return this.registry.list().map(({ execute, ...meta }) => meta);
   }
 
   private async *executeTools(blocks: MessagePart[]): AsyncGenerator<AgentEvent, MessagePart[]> {
