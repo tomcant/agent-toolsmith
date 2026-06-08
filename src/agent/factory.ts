@@ -1,6 +1,6 @@
 import { Agent } from "./agent.ts";
 import { SessionLog } from "./session/log.ts";
-import { createSessionDir } from "./session/session.ts";
+import { createSessionPath } from "./session/session.ts";
 import { evolve } from "./tools/builtins/evolve.ts";
 import { createToolDir } from "./tools/dir.ts";
 import { createToolRegistry } from "./tools/factory.ts";
@@ -10,7 +10,7 @@ import type { LlmClient } from "./types.ts";
 type CreateAgentOptions = {
   extraTools?: Tool[];
   toolDir?: string;
-  sessionsRootDir?: string;
+  sessionDir?: string;
 };
 
 export async function createAgent(
@@ -25,8 +25,8 @@ export async function createAgent(
   }
   toolRegistry.register(evolve(toolRegistry), { builtin: true });
 
-  const sessionDir = await createSessionDir(options.sessionsRootDir);
-  const sessionLog = new SessionLog(sessionDir);
+  const sessionPath = await createSessionPath(options.sessionDir);
+  const sessionLog = new SessionLog(sessionPath);
 
   return new Agent(llmClient, toolRegistry, sessionLog);
 }

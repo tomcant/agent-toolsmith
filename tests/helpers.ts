@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import type { AddToolInput } from "#/agent/tools/store.ts";
 import type { Tool } from "#/agent/tools/types.ts";
 
@@ -25,8 +24,8 @@ export function makeAddToolInput(
   };
 }
 
-export async function readSessionLog(sessionDir: string): Promise<unknown[]> {
-  const contents = await Bun.file(join(sessionDir, "session.jsonl")).text();
+export async function readSessionLog(sessionPath: string): Promise<unknown[]> {
+  const contents = await Bun.file(sessionPath).text();
   return contents
     .trim()
     .split("\n")

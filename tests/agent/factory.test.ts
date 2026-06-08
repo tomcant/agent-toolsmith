@@ -8,16 +8,16 @@ import { collect, makeTool } from "../helpers.ts";
 
 describe("agent creation", () => {
   let toolDir: string;
-  let sessionsRootDir: string;
+  let sessionDir: string;
 
   beforeEach(async () => {
     toolDir = await mkdtemp(join(tmpdir(), "tools-"));
-    sessionsRootDir = await mkdtemp(join(tmpdir(), "sessions-root-"));
+    sessionDir = await mkdtemp(join(tmpdir(), "sessions-"));
   });
 
   afterEach(async () => {
     await rm(toolDir, { recursive: true, force: true });
-    await rm(sessionsRootDir, { recursive: true, force: true });
+    await rm(sessionDir, { recursive: true, force: true });
   });
 
   test("registers the evolve tool", async () => {
@@ -27,7 +27,7 @@ describe("agent creation", () => {
         { type: "complete", response: [{ type: "text", text: "Reply" }] },
       ],
     ]);
-    const agent = await createAgent(llm, { toolDir, sessionsRootDir });
+    const agent = await createAgent(llm, { toolDir, sessionDir });
 
     await collect(agent.turn("User message"));
 
@@ -42,7 +42,7 @@ describe("agent creation", () => {
       ],
     ]);
     const extraTools = [makeTool("extra-tool")];
-    const agent = await createAgent(llm, { extraTools, toolDir, sessionsRootDir });
+    const agent = await createAgent(llm, { extraTools, toolDir, sessionDir });
 
     await collect(agent.turn("User message"));
 

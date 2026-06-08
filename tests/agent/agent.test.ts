@@ -14,13 +14,15 @@ describe("agent turns", () => {
   let toolDir: string;
   let registry: ToolRegistry;
   let sessionDir: string;
+  let sessionPath: string;
   let sessionLog: SessionLog;
 
   beforeEach(async () => {
     toolDir = await mkdtemp(join(tmpdir(), "tools-"));
     registry = new ToolRegistry(new ToolStore(toolDir));
-    sessionDir = await mkdtemp(join(tmpdir(), "session-"));
-    sessionLog = new SessionLog(sessionDir);
+    sessionDir = await mkdtemp(join(tmpdir(), "sessions-"));
+    sessionPath = join(sessionDir, "session.jsonl");
+    sessionLog = new SessionLog(sessionPath);
   });
 
   afterEach(async () => {
@@ -204,7 +206,7 @@ describe("agent turns", () => {
 
     await collect(agent.turn("User message"));
 
-    expect(await readSessionLog(sessionDir)).toEqual([
+    expect(await readSessionLog(sessionPath)).toEqual([
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",
@@ -238,7 +240,7 @@ describe("agent turns", () => {
 
     await expect(collect(agent.turn("User message"))).rejects.toThrow("error");
 
-    expect(await readSessionLog(sessionDir)).toEqual([
+    expect(await readSessionLog(sessionPath)).toEqual([
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",
@@ -257,7 +259,7 @@ describe("agent turns", () => {
       "LLM stream ended without a response",
     );
 
-    expect(await readSessionLog(sessionDir)).toEqual([
+    expect(await readSessionLog(sessionPath)).toEqual([
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",

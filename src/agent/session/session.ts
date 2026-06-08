@@ -1,13 +1,15 @@
-import { mkdir, mkdtemp } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 const DEFAULT_ROOT = join(homedir(), ".self-evolving-agent", "sessions");
 
-export async function createSessionDir(root: string = DEFAULT_ROOT): Promise<string> {
+export async function createSessionPath(root: string = DEFAULT_ROOT): Promise<string> {
   await mkdir(root, { recursive: true });
-  const dirPrefix = `${toFilenameSafeTimestamp(new Date())}-`;
-  return mkdtemp(join(root, dirPrefix));
+  const suffix = randomBytes(3).toString("hex");
+  const filename = `${toFilenameSafeTimestamp(new Date())}-${suffix}.jsonl`;
+  return join(root, filename);
 }
 
 function toFilenameSafeTimestamp(date: Date): string {
