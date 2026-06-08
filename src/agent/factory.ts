@@ -1,6 +1,5 @@
 import { Agent } from "./agent.ts";
-import { SessionLog } from "./session/log.ts";
-import { createSessionPath } from "./session/session.ts";
+import { createSession } from "./session.ts";
 import { evolve } from "./tools/builtins/evolve.ts";
 import { createToolDir } from "./tools/dir.ts";
 import { createToolRegistry } from "./tools/factory.ts";
@@ -25,8 +24,7 @@ export async function createAgent(
   }
   toolRegistry.register(evolve(toolRegistry), { builtin: true });
 
-  const sessionPath = await createSessionPath(options.sessionDir);
-  const sessionLog = new SessionLog(sessionPath);
+  const session = await createSession(options.sessionDir);
 
-  return new Agent(llmClient, toolRegistry, sessionLog);
+  return new Agent(llmClient, toolRegistry, session);
 }

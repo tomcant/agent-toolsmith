@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SessionLog } from "#/agent/session/log.ts";
-import { createSessionPath } from "#/agent/session/session.ts";
+import { createSession, Session } from "#/agent/session.ts";
 import { readSessionLog } from "../helpers.ts";
 
 describe("file", () => {
@@ -21,19 +20,24 @@ describe("file", () => {
   test("each session gets a .jsonl file named by its start time", async () => {
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
-    const path = await createSessionPath(sessionDir);
+    const session = await createSession(sessionDir);
+    await session.log({ kind: "error", message: "x" });
 
-    expect(path.startsWith(join(sessionDir, "2026-04-22T12-00-00-000Z-"))).toBe(true);
-    expect(path.endsWith(".jsonl")).toBe(true);
+    const files = await readdir(sessionDir);
+    expect(files).toHaveLength(1);
+    expect(files[0]).toStartWith("2026-04-22T12-00-00-000Z-");
+    expect(files[0]).toEndWith(".jsonl");
   });
 
   test("two sessions started at the same time get different files", async () => {
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
-    const first = await createSessionPath(sessionDir);
-    const second = await createSessionPath(sessionDir);
+    const first = await createSession(sessionDir);
+    const second = await createSession(sessionDir);
+    await first.log({ kind: "error", message: "x" });
+    await second.log({ kind: "error", message: "x" });
 
-    expect(first).not.toBe(second);
+    expect(await readdir(sessionDir)).toHaveLength(2);
   });
 });
 
@@ -53,24 +57,24 @@ describe("log", () => {
 
   test("messages and errors are persisted as timestamped JSON lines", async () => {
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
-    const log = new SessionLog(sessionPath);
+    const session = new Session(sessionPath);
 
-    await log.write({
+    await session.log({
       role: "user",
       content: [{ type: "text", text: "hello" }],
     });
-    await log.write({
+    await session.log({
       role: "assistant",
       content: [
         { type: "text", text: "hi" },
         { type: "tool_call", id: "t1", name: "tool-name", input: {} },
       ],
     });
-    await log.write({
+    await session.log({
       role: "user",
       content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
     });
-    await log.write({ kind: "error", message: "error" });
+    await session.log({ kind: "error", message: "error" });
 
     expect(await readSessionLog(sessionPath)).toEqual([
       {

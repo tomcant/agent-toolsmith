@@ -1,4 +1,4 @@
-import type { SessionLog } from "./session/log.ts";
+import type { Session } from "./session.ts";
 import type { ToolRegistry } from "./tools/registry.ts";
 import type { ToolMetadata } from "./tools/types.ts";
 import type { AgentEvent, LlmClient, Message, MessagePart } from "./types.ts";
@@ -11,7 +11,7 @@ export class Agent {
   constructor(
     private readonly client: LlmClient,
     private readonly registry: ToolRegistry,
-    private readonly log: SessionLog,
+    private readonly session: Session,
   ) {}
 
   listTools(): ToolMetadata[] {
@@ -28,7 +28,7 @@ export class Agent {
       content: [{ type: "text", text: input }],
     };
     const messages: Message[] = [...this.messages, userMessage];
-    await this.log.write(userMessage);
+    await this.session.log(userMessage);
 
     while (true) {
       try {
@@ -65,7 +65,7 @@ export class Agent {
           content: finalResponse,
         };
         messages.push(assistantMessage);
-        await this.log.write(assistantMessage);
+        await this.session.log(assistantMessage);
 
         const toolResults = yield* this.executeTools(finalResponse);
         if (toolResults.length === 0) break;
@@ -75,10 +75,10 @@ export class Agent {
           content: toolResults,
         };
         messages.push(toolResultsMessage);
-        await this.log.write(toolResultsMessage);
+        await this.session.log(toolResultsMessage);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        await this.log.write({ kind: "error", message });
+        await this.session.log({ kind: "error", message });
         throw err;
       }
     }

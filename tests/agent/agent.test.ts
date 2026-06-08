@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent } from "#/agent";
-import { SessionLog } from "#/agent/session/log.ts";
+import { Session } from "#/agent/session.ts";
 import { evolve } from "#/agent/tools/builtins/evolve.ts";
 import { ToolRegistry } from "#/agent/tools/registry.ts";
 import { ToolStore } from "#/agent/tools/store.ts";
@@ -15,14 +15,14 @@ describe("agent turns", () => {
   let registry: ToolRegistry;
   let sessionDir: string;
   let sessionPath: string;
-  let sessionLog: SessionLog;
+  let session: Session;
 
   beforeEach(async () => {
     toolDir = await mkdtemp(join(tmpdir(), "tools-"));
     registry = new ToolRegistry(new ToolStore(toolDir));
     sessionDir = await mkdtemp(join(tmpdir(), "sessions-"));
     sessionPath = join(sessionDir, "session.jsonl");
-    sessionLog = new SessionLog(sessionPath);
+    session = new Session(sessionPath);
   });
 
   afterEach(async () => {
@@ -39,7 +39,7 @@ describe("agent turns", () => {
         { type: "complete", response: [{ type: "text", text: "Reply" }] },
       ],
     ]);
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
 
     const events = await collect(agent.turn("User message"));
 
@@ -76,7 +76,7 @@ describe("agent turns", () => {
         },
       }),
     );
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
 
     const events = await collect(agent.turn("User message"));
 
@@ -134,7 +134,7 @@ describe("agent turns", () => {
         },
       }),
     );
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
 
     const events = await collect(agent.turn("User message"));
 
@@ -174,7 +174,7 @@ describe("agent turns", () => {
         },
       }),
     );
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
 
     await collect(agent.turn("User message"));
 
@@ -201,7 +201,7 @@ describe("agent turns", () => {
       ],
     ]);
     registry.register(makeTool("tool-name", { execute: async () => "result" }));
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
     await collect(agent.turn("User message"));
@@ -235,7 +235,7 @@ describe("agent turns", () => {
 
   test("turn errors are recorded in the session log", async () => {
     const llm = new LlmClientSpy([new Error("error")]);
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
     await expect(collect(agent.turn("User message"))).rejects.toThrow("error");
@@ -252,7 +252,7 @@ describe("agent turns", () => {
 
   test("a stream that ends without a response is reported as an error", async () => {
     const llm = new LlmClientSpy([[{ type: "text_delta", text: "Reply" }]]);
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
     setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
 
     await expect(collect(agent.turn("User message"))).rejects.toThrow(
@@ -285,7 +285,7 @@ describe("agent turns", () => {
         { type: "complete", response: [{ type: "text", text: "Reply 3" }] },
       ],
     ]);
-    const agent = new Agent(llm, registry, sessionLog);
+    const agent = new Agent(llm, registry, session);
 
     await collect(agent.turn("User message 1"));
     await expect(collect(agent.turn("User message 2"))).rejects.toThrow("error");
@@ -301,7 +301,7 @@ describe("agent turns", () => {
   test("registered tools are exposed as metadata", () => {
     registry.register(makeTool("t1", { description: "first" }));
     registry.register(makeTool("t2", { description: "second" }));
-    const agent = new Agent(new LlmClientSpy([]), registry, sessionLog);
+    const agent = new Agent(new LlmClientSpy([]), registry, session);
 
     const tools = agent.listTools();
 
@@ -313,7 +313,7 @@ describe("agent turns", () => {
 
   test("the evolve tool is hidden from the listed tools", () => {
     registry.register(evolve(registry));
-    const agent = new Agent(new LlmClientSpy([]), registry, sessionLog);
+    const agent = new Agent(new LlmClientSpy([]), registry, session);
 
     expect(agent.listTools().map((t) => t.name)).toEqual([]);
   });
