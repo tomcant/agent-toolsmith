@@ -11,6 +11,10 @@ export function makeTool(name: string, overrides: Partial<Tool> = {}): Tool {
   };
 }
 
+export function makeToolSource(): string {
+  return 'export const tool = { description: "d", inputSchema: { type: "object" }, execute: async () => "x" };';
+}
+
 export function makeAddToolInput(
   name: string,
   overrides: Partial<AddToolInput> = {},

@@ -50,7 +50,6 @@ describe("tool registration and lifecycle", () => {
     registry.register(makeTool("tool-name", { description: "from builtin" }), { builtin: true });
 
     expect(registry.get("tool-name")?.description).toBe("from builtin");
-    await expect(registry.remove("tool-name")).rejects.toThrow("builtin");
   });
 
   test("registering a duplicate name is rejected", () => {
@@ -70,37 +69,59 @@ describe("tool registration and lifecycle", () => {
     await registry.add(makeAddToolInput("tool-name"));
 
     expect(registry.get("tool-name")?.name).toBe("tool-name");
-    expect((await new ToolStore(toolDir).load("tool-name")).name).toBe("tool-name");
+    expect((await store.load("tool-name")).name).toBe("tool-name");
   });
 
   test("adding a tool with invalid metadata is rejected", async () => {
     await expect(registry.add(makeAddToolInput("bad name"))).rejects.toThrow();
-
-    expect(await Bun.file(join(toolDir, "bad name.ts")).exists()).toBe(false);
   });
 
   test("adding a tool with empty code is rejected", async () => {
     await expect(registry.add(makeAddToolInput("tool-name", { code: "" }))).rejects.toThrow();
-
-    expect(await Bun.file(join(toolDir, "tool-name.ts")).exists()).toBe(false);
   });
 
-  test("adding a tool whose code fails to load is rolled back", async () => {
-    await expect(
-      registry.add(makeAddToolInput("tool-name", { code: "this is not valid typescript {" })),
-    ).rejects.toThrow();
+  test("adding a tool whose code fails to load registers nothing", async () => {
+    const brokenToolInput = makeAddToolInput("tool-name", { code: "invalid js {" });
+    await expect(registry.add(brokenToolInput)).rejects.toThrow();
 
-    expect(await Bun.file(join(toolDir, "tool-name.ts")).exists()).toBe(false);
+    expect(registry.get("tool-name")).toBeUndefined();
   });
 
-  test("adding a duplicate name is rejected", async () => {
-    const existing = makeTool("tool-name");
-    registry.register(existing);
+  test("adding over an already added tool replaces it", async () => {
+    await registry.add(
+      makeAddToolInput("tool-name", { description: "old description", code: 'return "old";' }),
+    );
 
-    await expect(registry.add(makeAddToolInput("tool-name"))).rejects.toThrow("already registered");
+    await registry.add(
+      makeAddToolInput("tool-name", { description: "new description", code: 'return "new";' }),
+    );
 
-    expect(registry.get("tool-name")).toBe(existing);
-    expect(await Bun.file(join(toolDir, "tool-name.ts")).exists()).toBe(false);
+    expect(await registry.get("tool-name")?.execute({})).toBe("new");
+    expect(registry.get("tool-name")?.description).toBe("new description");
+    expect(await (await store.load("tool-name")).execute({})).toBe("new");
+  });
+
+  test("adding over an already registered tool replaces it", async () => {
+    registry.register(makeTool("tool-name"));
+
+    await registry.add(makeAddToolInput("tool-name", { code: 'return "new";' }));
+
+    expect(await registry.get("tool-name")?.execute({})).toBe("new");
+  });
+
+  test("adding over a builtin tool is rejected", async () => {
+    registry.register(makeTool("tool-name"), { builtin: true });
+
+    await expect(registry.add(makeAddToolInput("tool-name"))).rejects.toThrow("builtin");
+  });
+
+  test("a failed add preserves the previous tool", async () => {
+    await registry.add(makeAddToolInput("tool-name", { code: 'return "good";' }));
+
+    const brokenToolInput = makeAddToolInput("tool-name", { code: "invalid js {" });
+    await expect(registry.add(brokenToolInput)).rejects.toThrow();
+
+    expect(await registry.get("tool-name")?.execute({})).toBe("good");
   });
 
   test("tools can be removed", async () => {
@@ -109,7 +130,7 @@ describe("tool registration and lifecycle", () => {
     await registry.remove("tool-name");
 
     expect(registry.get("tool-name")).toBeUndefined();
-    expect(await Bun.file(join(toolDir, "tool-name.ts")).exists()).toBe(false);
+    await expect(store.load("tool-name")).rejects.toThrow();
   });
 
   test("removing an unknown tool is rejected", async () => {

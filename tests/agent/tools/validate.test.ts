@@ -24,6 +24,8 @@ describe("validating tool metadata", () => {
 
   test("a name that doesn't match the allowed pattern is rejected", () => {
     expect(() => validateMetadata({ ...validMetadata, name: "has space" })).toThrow("name");
+    expect(() => validateMetadata({ ...validMetadata, name: "../escape" })).toThrow("name");
+    expect(() => validateMetadata({ ...validMetadata, name: "a/b" })).toThrow("name");
   });
 
   test("an empty description is rejected", () => {

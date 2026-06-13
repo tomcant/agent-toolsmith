@@ -1,4 +1,5 @@
-import { readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { isObject } from "#/utils.ts";
 import template from "./builtins/tool.ts.tpl" with { type: "text" };
@@ -33,8 +34,21 @@ export class ToolStore {
     return loadTool(this.pathFor(name));
   }
 
-  async write(input: AddToolInput): Promise<void> {
-    await Bun.write(this.pathFor(input.name), renderTool(input));
+  async save(input: AddToolInput): Promise<void> {
+    // Stage, validate, promote: new code never touches the real tool path until
+    // it has proven to load, so a failed save leaves the previous version intact.
+    const stageDir = await mkdtemp(join(tmpdir(), "tool-staging-"));
+    const source = renderTool(input);
+
+    try {
+      const stagePath = join(stageDir, `${input.name}.ts`);
+      await Bun.write(stagePath, source);
+      await loadTool(stagePath);
+    } finally {
+      await rm(stageDir, { recursive: true, force: true });
+    }
+
+    await Bun.write(this.pathFor(input.name), source);
   }
 
   async delete(name: string): Promise<void> {

@@ -36,17 +36,12 @@ export class ToolRegistry {
       throw new Error("code must be a non-empty string");
     }
 
-    if (this.tools.has(input.name)) {
-      throw new Error(`Tool already registered: ${input.name}`);
+    if (this.builtins.has(input.name)) {
+      throw new Error(`Cannot overwrite builtin tool: ${input.name}`);
     }
 
-    await this.store.write(input);
-    try {
-      this.register(await this.store.load(input.name));
-    } catch (err) {
-      await this.store.delete(input.name);
-      throw err;
-    }
+    await this.store.save(input);
+    this.tools.set(input.name, await this.store.load(input.name));
   }
 
   async remove(name: string): Promise<void> {

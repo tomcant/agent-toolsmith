@@ -5,14 +5,14 @@ import type { Tool } from "../types.ts";
 export function evolve(toolRegistry: ToolRegistry): Tool {
   return {
     name: "evolve",
-    description: "Add a tool for use in this and future sessions.",
+    description: "Add or update a tool for use in this and future sessions.",
     inputSchema: {
       type: "object",
       properties: {
         name: {
           type: "string",
           description:
-            "Tool name (lowercase alphanumeric and hyphens, max 64 chars, e.g. 'read-file').",
+            "Tool name (lowercase alphanumeric and hyphens, max 64 chars, e.g. 'read-file'). Use the name of an existing tool to replace it.",
         },
         description: {
           type: "string",
@@ -35,7 +35,7 @@ export function evolve(toolRegistry: ToolRegistry): Tool {
     execute: async (input) => {
       try {
         await toolRegistry.add(input as AddToolInput);
-        return `Added tool '${input.name}'`;
+        return `Evolved tool '${input.name}'`;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return `Error: ${message}`;
