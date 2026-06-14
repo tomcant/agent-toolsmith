@@ -1,6 +1,6 @@
 import { Spinner, TextInput } from "@inkjs/ui";
 import { Box, Text, useApp, useInput } from "ink";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import type { Agent } from "#/agent";
 import { type Command, parseCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
@@ -10,7 +10,7 @@ import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { ToolList } from "./components/ToolList.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
-import { applyAgentEvent, type TranscriptItem } from "./transcript.ts";
+import { applyAgentEvent, markAbortedToolCalls, type TranscriptItem } from "./transcript.ts";
 
 type AppProps = {
   agent: Agent;
@@ -18,14 +18,22 @@ type AppProps = {
 
 export function App({ agent }: AppProps) {
   const { exit } = useApp();
+  const abortRef = useRef<AbortController | null>(null);
   const [textInputKey, setTextInputKey] = useState(0);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [overlay, setOverlay] = useState<ReactNode>(null);
   const [busy, setBusy] = useState(false);
 
   useInput((_input, key) => {
-    if (key.escape && overlay) {
+    if (!key.escape) {
+      return;
+    }
+    if (overlay) {
       setOverlay(null);
+      return;
+    }
+    if (busy) {
+      abortRef.current?.abort();
     }
   });
 
@@ -70,16 +78,24 @@ export function App({ agent }: AppProps) {
     setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: input }]);
     setBusy(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      for await (const event of agent.turn(input)) {
+      for await (const event of agent.turn(input, controller.signal)) {
         setTranscript((prev) => applyAgentEvent(prev, event));
+      }
+      if (controller.signal.aborted) {
+        setTranscript(markAbortedToolCalls);
+        appendSystemMessage("Interrupted");
       }
     } catch (err) {
       const content = err instanceof Error ? err.message : String(err);
       setTranscript((prev) => [...prev, { kind: "error", id: prev.length, content }]);
+    } finally {
+      abortRef.current = null;
+      setBusy(false);
     }
-
-    setBusy(false);
   };
 
   return (
@@ -125,7 +141,9 @@ function renderTranscriptItem(item: TranscriptItem) {
     case "assistant":
       return <AssistantMessage content={item.content} />;
     case "tool_call":
-      return <ToolCall name={item.name} input={item.input} result={item.result} />;
+      return (
+        <ToolCall name={item.name} input={item.input} result={item.result} aborted={item.aborted} />
+      );
     case "system":
       return <SystemMessage content={item.content} />;
     case "error":

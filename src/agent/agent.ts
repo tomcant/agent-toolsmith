@@ -22,7 +22,7 @@ export class Agent {
     await this.registry.remove(name);
   }
 
-  async *turn(input: string): AsyncGenerator<AgentEvent> {
+  async *turn(input: string, signal?: AbortSignal): AsyncGenerator<AgentEvent> {
     const userMessage: Message = {
       role: "user",
       content: [{ type: "text", text: input }],
@@ -31,8 +31,9 @@ export class Agent {
     await this.session.log(userMessage);
 
     while (true) {
+      if (signal?.aborted) break;
       try {
-        const stream = this.client.send(messages, this.toolMetadata());
+        const stream = this.client.send(messages, this.toolMetadata(), signal);
         let finalResponse: MessagePart[] | undefined;
 
         for await (const event of stream) {
@@ -67,7 +68,7 @@ export class Agent {
         messages.push(assistantMessage);
         await this.session.log(assistantMessage);
 
-        const toolResults = yield* this.executeTools(finalResponse);
+        const toolResults = yield* this.executeTools(finalResponse, signal);
         if (toolResults.length === 0) break;
 
         const toolResultsMessage: Message = {
@@ -77,10 +78,16 @@ export class Agent {
         messages.push(toolResultsMessage);
         await this.session.log(toolResultsMessage);
       } catch (err) {
+        if (signal?.aborted) break;
         const message = err instanceof Error ? err.message : String(err);
         await this.session.log({ kind: "error", message });
         throw err;
       }
+    }
+
+    if (signal?.aborted) {
+      await this.session.log({ kind: "aborted" });
+      return;
     }
 
     this.messages = messages;
@@ -90,11 +97,15 @@ export class Agent {
     return this.registry.list().map(({ execute, ...meta }) => meta);
   }
 
-  private async *executeTools(blocks: MessagePart[]): AsyncGenerator<AgentEvent, MessagePart[]> {
+  private async *executeTools(
+    blocks: MessagePart[],
+    signal?: AbortSignal,
+  ): AsyncGenerator<AgentEvent, MessagePart[]> {
     const toolResults: MessagePart[] = [];
 
     for (const block of blocks) {
       if (block.type !== "tool_call") continue;
+      if (signal?.aborted) break;
 
       const tool = this.registry.get(block.name);
       let result: ToolResult;

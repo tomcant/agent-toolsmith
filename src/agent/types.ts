@@ -21,5 +21,5 @@ export type LlmEvent =
   | { type: "complete"; response: MessagePart[] };
 
 export interface LlmClient {
-  send(messages: Message[], tools?: ToolMetadata[]): AsyncGenerator<LlmEvent>;
+  send(messages: Message[], tools?: ToolMetadata[], signal?: AbortSignal): AsyncIterable<LlmEvent>;
 }

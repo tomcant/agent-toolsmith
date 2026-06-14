@@ -298,6 +298,163 @@ describe("agent turns", () => {
     ]);
   });
 
+  test("the abort signal is forwarded to the LLM client", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "text_delta", text: "Reply" },
+        { type: "complete", response: [{ type: "text", text: "Reply" }] },
+      ],
+    ]);
+    const agent = new Agent(llm, registry, session);
+    const controller = new AbortController();
+
+    await collect(agent.turn("User message", controller.signal));
+
+    expect(llm.calls[0]?.signal).toBe(controller.signal);
+  });
+
+  test("aborting mid-stream ends the turn gracefully", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "text_delta", text: "Re" },
+        { type: "text_delta", text: "ply" },
+        { type: "complete", response: [{ type: "text", text: "Reply" }] },
+      ],
+    ]);
+    const agent = new Agent(llm, registry, session);
+    const controller = new AbortController();
+
+    const turn = agent.turn("User message", controller.signal);
+    const first = await turn.next();
+    controller.abort();
+    const rest = await collect(turn);
+
+    expect(first.value).toEqual({ type: "text", text: "Re" });
+    expect(rest).toEqual([]);
+  });
+
+  test("aborting stops pending tool calls without running them", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "tool_call", id: "t1", name: "abort-tool", input: {} },
+        { type: "tool_call", id: "t2", name: "other-tool", input: {} },
+        {
+          type: "complete",
+          response: [
+            { type: "tool_call", id: "t1", name: "abort-tool", input: {} },
+            { type: "tool_call", id: "t2", name: "other-tool", input: {} },
+          ],
+        },
+      ],
+    ]);
+    const controller = new AbortController();
+    let otherToolRan = false;
+    registry.register(
+      makeTool("abort-tool", {
+        execute: async () => {
+          controller.abort();
+          return "aborted";
+        },
+      }),
+    );
+    registry.register(
+      makeTool("other-tool", {
+        execute: async () => {
+          otherToolRan = true;
+          return "ran";
+        },
+      }),
+    );
+    const agent = new Agent(llm, registry, session);
+
+    const events = await collect(agent.turn("User message", controller.signal));
+
+    expect(events).toEqual([
+      { type: "tool_call", id: "t1", name: "abort-tool", input: {} },
+      { type: "tool_call", id: "t2", name: "other-tool", input: {} },
+      { type: "tool_result", tool_call_id: "t1", content: "aborted", is_error: false },
+    ]);
+    expect(otherToolRan).toBe(false);
+    expect(llm.calls).toHaveLength(1);
+  });
+
+  test("aborted turns are excluded from the conversation", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "tool_call", id: "t1", name: "abort-tool", input: {} },
+        {
+          type: "complete",
+          response: [{ type: "tool_call", id: "t1", name: "abort-tool", input: {} }],
+        },
+      ],
+      [
+        { type: "text_delta", text: "Reply" },
+        { type: "complete", response: [{ type: "text", text: "Reply" }] },
+      ],
+    ]);
+    const controller = new AbortController();
+    registry.register(
+      makeTool("abort-tool", {
+        execute: async () => {
+          controller.abort();
+          return "done";
+        },
+      }),
+    );
+    const agent = new Agent(llm, registry, session);
+
+    await collect(agent.turn("User message 1", controller.signal));
+    await collect(agent.turn("User message 2"));
+
+    expect(llm.calls[1]?.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "User message 2" }] },
+    ]);
+  });
+
+  test("aborted turns are recorded in the session log", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "tool_call", id: "t1", name: "abort-tool", input: {} },
+        {
+          type: "complete",
+          response: [{ type: "tool_call", id: "t1", name: "abort-tool", input: {} }],
+        },
+      ],
+    ]);
+    const controller = new AbortController();
+    registry.register(
+      makeTool("abort-tool", {
+        execute: async () => {
+          controller.abort();
+          return "done";
+        },
+      }),
+    );
+    const agent = new Agent(llm, registry, session);
+    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
+
+    await collect(agent.turn("User message", controller.signal));
+
+    expect(await readSessionLog(sessionPath)).toEqual([
+      {
+        time: "2026-04-22T12:00:00.000Z",
+        role: "user",
+        content: [{ type: "text", text: "User message" }],
+      },
+      {
+        time: "2026-04-22T12:00:00.000Z",
+        role: "assistant",
+        content: [{ type: "tool_call", id: "t1", name: "abort-tool", input: {} }],
+      },
+      {
+        time: "2026-04-22T12:00:00.000Z",
+        role: "user",
+        content: [{ type: "tool_result", tool_call_id: "t1", content: "done", is_error: false }],
+      },
+      { time: "2026-04-22T12:00:00.000Z", kind: "aborted" },
+    ]);
+  });
+
   test("registered tools are exposed as metadata", () => {
     registry.register(makeTool("t1", { description: "first" }));
     registry.register(makeTool("t2", { description: "second" }));

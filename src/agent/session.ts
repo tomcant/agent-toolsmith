@@ -6,12 +6,12 @@ import type { Message } from "./types.ts";
 
 const DEFAULT_ROOT = join(homedir(), ".self-evolving-agent", "sessions");
 
-type SessionRecord = Message | { kind: "error"; message: string };
+type SessionLog = Message | { kind: "error"; message: string } | { kind: "aborted" };
 
 export class Session {
   constructor(private readonly path: string) {}
 
-  async log(record: SessionRecord): Promise<void> {
+  async log(record: SessionLog): Promise<void> {
     const line = `${JSON.stringify({ time: new Date().toISOString(), ...record })}\n`;
     await appendFile(this.path, line);
   }

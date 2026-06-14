@@ -9,10 +9,11 @@ type ToolCallProps = {
     content: string;
     is_error: boolean;
   };
+  aborted?: boolean;
 };
 
-export function ToolCall({ name, input, result }: ToolCallProps) {
-  const status = getStatus(result);
+export function ToolCall({ name, input, result, aborted }: ToolCallProps) {
+  const status = getStatus(result, aborted);
   return (
     <Box flexDirection="column" paddingLeft={2}>
       <Box>
@@ -22,20 +23,27 @@ export function ToolCall({ name, input, result }: ToolCallProps) {
         <Text bold>{name}</Text>
         <Text dimColor>({formatInput(input)})</Text>
       </Box>
-      {result && (
+      {result ? (
         <Box paddingLeft={2}>
           <Text color={result.is_error ? "red" : undefined} dimColor={!result.is_error}>
             {summarise(result.content)}
           </Text>
         </Box>
-      )}
+      ) : aborted ? (
+        <Box paddingLeft={2}>
+          <Text dimColor>interrupted</Text>
+        </Box>
+      ) : null}
     </Box>
   );
 }
 
-function getStatus(result: ToolCallProps["result"]): { icon: string; color: string } {
+function getStatus(
+  result: ToolCallProps["result"],
+  aborted?: boolean,
+): { icon: string; color: string } {
   if (!result) {
-    return { icon: "●", color: "yellow" };
+    return aborted ? { icon: "⊘", color: "gray" } : { icon: "●", color: "yellow" };
   }
   if (result.is_error) {
     return { icon: "✗", color: "red" };

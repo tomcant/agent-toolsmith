@@ -14,6 +14,7 @@ export type TranscriptItem =
         content: string;
         is_error: boolean;
       };
+      aborted?: boolean;
     }
   | { kind: "system"; id: number; content: string }
   | { kind: "error"; id: number; content: string };
@@ -70,4 +71,10 @@ export function applyAgentEvent(transcript: TranscriptItem[], event: AgentEvent)
       ];
     }
   }
+}
+
+export function markAbortedToolCalls(transcript: TranscriptItem[]): TranscriptItem[] {
+  return transcript.map((item) =>
+    item.kind === "tool_call" && !item.result ? { ...item, aborted: true } : item,
+  );
 }

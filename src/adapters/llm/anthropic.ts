@@ -9,14 +9,21 @@ export class AnthropicLlmClient implements LlmClient {
     private readonly systemPrompt?: string,
   ) {}
 
-  async *send(messages: Message[], tools?: ToolMetadata[]): AsyncGenerator<LlmEvent> {
-    const stream = this.sdk.messages.stream({
-      model: this.model,
-      max_tokens: 8192,
-      messages: messages.map(toSdkMessage),
-      ...(tools && tools.length > 0 ? { tools: tools.map(toSdkTool) } : {}),
-      ...(this.systemPrompt ? { system: this.systemPrompt } : {}),
-    });
+  async *send(
+    messages: Message[],
+    tools?: ToolMetadata[],
+    signal?: AbortSignal,
+  ): AsyncGenerator<LlmEvent> {
+    const stream = this.sdk.messages.stream(
+      {
+        model: this.model,
+        max_tokens: 8192,
+        messages: messages.map(toSdkMessage),
+        ...(tools && tools.length > 0 ? { tools: tools.map(toSdkTool) } : {}),
+        ...(this.systemPrompt ? { system: this.systemPrompt } : {}),
+      },
+      { signal },
+    );
 
     const toolBlocks = new Map<number, { id: string; name: string; json: string }>();
 
