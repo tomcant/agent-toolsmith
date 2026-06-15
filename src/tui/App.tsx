@@ -6,6 +6,7 @@ import { type Command, parseCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
 import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
+import { Overlay } from "./components/Overlay.tsx";
 import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { ToolList } from "./components/ToolList.tsx";
@@ -21,7 +22,7 @@ export function App({ agent }: AppProps) {
   const abortRef = useRef<AbortController | null>(null);
   const [textInputKey, setTextInputKey] = useState(0);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
-  const [overlay, setOverlay] = useState<ReactNode>(null);
+  const [overlay, setOverlay] = useState<{ title: string; content: ReactNode } | null>(null);
   const [busy, setBusy] = useState(false);
 
   useInput((_input, key) => {
@@ -44,7 +45,10 @@ export function App({ agent }: AppProps) {
   const handleCommand = async (command: Command) => {
     switch (command.kind) {
       case "tools_list":
-        setOverlay(<ToolList tools={agent.listTools()} />);
+        setOverlay({
+          title: "Tools",
+          content: <ToolList tools={agent.listTools()} />,
+        });
         return;
       case "tools_remove":
         await agent.removeTool(command.name);
@@ -111,23 +115,20 @@ export function App({ agent }: AppProps) {
           <Spinner label="Thinking..." />
         </Box>
       )}
-      {overlay && (
-        <Box flexDirection="column" gap={1} paddingX={1}>
-          {overlay}
-          <Text dimColor>Esc to close</Text>
-        </Box>
-      )}
-      <Box paddingX={1} borderStyle="round" borderColor="cyan" borderDimColor>
-        <Text color="cyan" bold>
-          ❯{" "}
-        </Text>
-        <Box flexGrow={1}>
-          <TextInput
-            key={textInputKey}
-            isDisabled={busy}
-            placeholder="Type a message (Ctrl+C or /exit to quit)"
-            onSubmit={handleSubmit}
-          />
+      <Box flexDirection="column">
+        {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
+        <Box paddingX={1} borderStyle="round" borderColor="cyan" borderDimColor>
+          <Text color="cyan" bold>
+            ❯{" "}
+          </Text>
+          <Box flexGrow={1}>
+            <TextInput
+              key={textInputKey}
+              isDisabled={busy}
+              placeholder="Type a message (Ctrl+C or /exit to quit)"
+              onSubmit={handleSubmit}
+            />
+          </Box>
         </Box>
       </Box>
     </Box>
