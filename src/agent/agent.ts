@@ -1,7 +1,7 @@
 import type { Session } from "./session.ts";
 import type { ToolRegistry } from "./tools/registry.ts";
 import type { ToolMetadata } from "./tools/types.ts";
-import type { AgentEvent, LlmClient, Message, MessagePart } from "./types.ts";
+import type { AgentEvent, LlmClient, Message, MessagePart, ModelInfo } from "./types.ts";
 
 type ToolResult = { content: string; is_error: boolean };
 
@@ -13,6 +13,10 @@ export class Agent {
     private readonly registry: ToolRegistry,
     private readonly session: Session,
   ) {}
+
+  modelInfo(): ModelInfo {
+    return { provider: this.client.provider, model: this.client.model };
+  }
 
   listTools(): ToolMetadata[] {
     return this.toolMetadata().filter((tool) => tool.name !== "evolve");

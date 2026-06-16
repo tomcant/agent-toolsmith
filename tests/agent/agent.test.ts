@@ -474,4 +474,10 @@ describe("agent turns", () => {
 
     expect(agent.listTools().map((t) => t.name)).toEqual([]);
   });
+
+  test("model info surfaces the client's provider and model", () => {
+    const agent = new Agent(new LlmClientSpy([]), registry, session);
+
+    expect(agent.modelInfo()).toEqual({ provider: "spy", model: "spy-model" });
+  });
 });

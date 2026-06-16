@@ -3,9 +3,11 @@ import type { ToolInput, ToolMetadata } from "#/agent/tools/types.ts";
 import type { LlmClient, LlmEvent, Message, MessagePart } from "#/agent/types.ts";
 
 export class AnthropicLlmClient implements LlmClient {
+  readonly provider = "anthropic";
+
   constructor(
     private readonly sdk: Anthropic,
-    private readonly model: string,
+    readonly model: string,
     private readonly systemPrompt?: string,
   ) {}
 

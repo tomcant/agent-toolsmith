@@ -3,6 +3,9 @@ import type { LlmClient, LlmEvent, Message } from "#/agent/types.ts";
 import { runScenario } from "./scenarios.ts";
 
 export class DemoLlmClient implements LlmClient {
+  readonly provider = "demo-provider";
+  readonly model = "demo-model";
+
   async *send(
     messages: Message[],
     _tools?: ToolMetadata[],

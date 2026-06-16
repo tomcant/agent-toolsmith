@@ -9,6 +9,8 @@ type SpyCall = {
 type SpyReply = LlmEvent[] | Error;
 
 export class LlmClientSpy implements LlmClient {
+  readonly provider = "spy";
+  readonly model = "spy-model";
   readonly calls: SpyCall[] = [];
   private replyIndex = 0;
 

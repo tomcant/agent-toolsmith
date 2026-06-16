@@ -5,21 +5,20 @@ export type AgentEvent =
   | { type: "tool_call"; id: string; name: string; input: ToolInput }
   | { type: "tool_result"; tool_call_id: string; content: string; is_error: boolean };
 
-export type Message = {
-  role: "user" | "assistant";
-  content: MessagePart[];
-};
+export type Message = { role: "user" | "assistant"; content: MessagePart[] };
 
 export type MessagePart =
   | { type: "text"; text: string }
   | { type: "tool_call"; id: string; name: string; input: ToolInput }
   | { type: "tool_result"; tool_call_id: string; content: string; is_error: boolean };
 
+export interface LlmClient extends Readonly<ModelInfo> {
+  send(messages: Message[], tools?: ToolMetadata[], signal?: AbortSignal): AsyncIterable<LlmEvent>;
+}
+
+export type ModelInfo = { provider: string; model: string };
+
 export type LlmEvent =
   | { type: "text_delta"; text: string }
   | { type: "tool_call"; id: string; name: string; input: ToolInput }
   | { type: "complete"; response: MessagePart[] };
-
-export interface LlmClient {
-  send(messages: Message[], tools?: ToolMetadata[], signal?: AbortSignal): AsyncIterable<LlmEvent>;
-}

@@ -7,6 +7,7 @@ import { AssistantMessage } from "./components/AssistantMessage.tsx";
 import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
 import { Overlay } from "./components/Overlay.tsx";
+import { StatusBar } from "./components/StatusBar.tsx";
 import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { ToolList } from "./components/ToolList.tsx";
@@ -130,6 +131,7 @@ export function App({ agent }: AppProps) {
             />
           </Box>
         </Box>
+        <StatusBar {...agent.modelInfo()} />
       </Box>
     </Box>
   );
