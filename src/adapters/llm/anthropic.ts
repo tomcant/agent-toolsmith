@@ -1,6 +1,20 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import type { ToolInput, ToolMetadata } from "#/agent/tools/types.ts";
 import type { LlmClient, LlmEvent, Message, MessagePart } from "#/agent/types.ts";
+
+export function anthropicFromEnv(
+  env: Record<string, string | undefined>,
+  systemPrompt?: string,
+): AnthropicLlmClient | null {
+  if (!env.ANTHROPIC_API_KEY) {
+    return null;
+  }
+  return new AnthropicLlmClient(
+    new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }),
+    env.MODEL ?? "claude-sonnet-4-6",
+    systemPrompt,
+  );
+}
 
 export class AnthropicLlmClient implements LlmClient {
   readonly provider = "anthropic";
