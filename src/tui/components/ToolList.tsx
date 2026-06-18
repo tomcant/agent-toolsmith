@@ -1,13 +1,32 @@
+import { Box, Text } from "ink";
 import type { ToolMetadata } from "#/agent/tools/types.ts";
-import { formatToolList } from "../commands.ts";
-import { useTerminalWidth } from "../hooks.ts";
-import { SystemMessage } from "./SystemMessage.tsx";
+import { toolListRows } from "../commands.ts";
 
 type ToolListProps = {
   tools: ToolMetadata[];
 };
 
 export function ToolList({ tools }: ToolListProps) {
-  const width = useTerminalWidth();
-  return <SystemMessage content={formatToolList(tools, width - 4)} />;
+  const rows = toolListRows(tools);
+
+  if (rows.length === 0) {
+    return <Text color="gray">No tools available.</Text>;
+  }
+
+  return (
+    <Box flexDirection="column">
+      {rows.map((row) => (
+        <Box key={row.name}>
+          <Box flexShrink={0} marginRight={2}>
+            <Text color="gray">{row.name}</Text>
+          </Box>
+          <Box flexGrow={1}>
+            <Text color="gray" wrap="truncate-end">
+              {row.description}
+            </Text>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
 }

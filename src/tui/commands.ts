@@ -1,10 +1,11 @@
 import type { ToolMetadata } from "#/agent/tools/types.ts";
-import { truncate } from "./utils.ts";
 
 export type Command =
   | { kind: "tools_list" }
   | { kind: "tools_remove"; name: string }
   | { kind: "exit" };
+
+export type ToolListRow = { name: string; description: string };
 
 export function parseCommand(input: string): Command | null {
   const trimmed = input.trim();
@@ -32,15 +33,10 @@ export function parseCommand(input: string): Command | null {
   throw new Error(`Unknown command: /${head}`);
 }
 
-export function formatToolList(tools: ToolMetadata[], width: number): string {
-  if (tools.length === 0) {
-    return "No tools available.";
-  }
-
-  const labelWidth = Math.max(...tools.map((t) => t.name.length));
+export function toolListRows(tools: ToolMetadata[]): ToolListRow[] {
+  const labelWidth = Math.max(0, ...tools.map((t) => t.name.length));
 
   return [...tools]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map((tool) => truncate(`${tool.name.padEnd(labelWidth)}  ${tool.description}`, width))
-    .join("\n");
+    .map((tool) => ({ name: tool.name.padEnd(labelWidth), description: tool.description }));
 }

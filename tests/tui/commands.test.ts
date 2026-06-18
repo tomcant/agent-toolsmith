@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatToolList, parseCommand } from "#/tui/commands.ts";
+import { parseCommand, toolListRows } from "#/tui/commands.ts";
 import { makeTool } from "../helpers.ts";
 
 describe("slash commands", () => {
@@ -44,51 +44,29 @@ describe("slash commands", () => {
   });
 });
 
-describe("rendering the tool list", () => {
-  test("descriptions are aligned in a column regardless of tool name length", () => {
-    const availableWidth = 80;
+describe("preparing the tool list for display", () => {
+  test("names are padded to a common width", () => {
+    const rows = toolListRows([
+      makeTool("tool-name", { description: "a tool" }),
+      makeTool("really-long-tool-name", { description: "another tool" }),
+    ]);
 
-    const result = formatToolList(
-      [
-        makeTool("tool-name", { description: "a tool" }),
-        makeTool("really-long-tool-name", { description: "another tool" }),
-      ],
-      availableWidth,
-    );
-
-    expect(result).toBe("really-long-tool-name  another tool\ntool-name              a tool");
+    expect(rows).toEqual([
+      { name: "really-long-tool-name", description: "another tool" },
+      { name: "tool-name            ", description: "a tool" },
+    ]);
   });
 
-  test("tools are displayed in alphabetical order", () => {
-    const availableWidth = 80;
+  test("tools are ordered alphabetically by name", () => {
+    const rows = toolListRows([
+      makeTool("b-tool", { description: "comes second" }),
+      makeTool("a-tool", { description: "comes first" }),
+    ]);
 
-    const result = formatToolList(
-      [
-        makeTool("b-tool", { description: "comes second" }),
-        makeTool("a-tool", { description: "comes first" }),
-      ],
-      availableWidth,
-    );
-
-    expect(result).toBe("a-tool  comes first\nb-tool  comes second");
+    expect(rows.map((row) => row.name)).toEqual(["a-tool", "b-tool"]);
   });
 
-  test("a line wider than the available width is truncated with an ellipsis", () => {
-    const availableWidth = 10;
-
-    const result = formatToolList(
-      [makeTool("tool", { description: "a long description" })],
-      availableWidth,
-    );
-
-    expect(result).toBe("tool  a l…");
-  });
-
-  test("an empty tool inventory is reported in human-readable form", () => {
-    const availableWidth = 80;
-
-    const result = formatToolList([], availableWidth);
-
-    expect(result).toBe("No tools available.");
+  test("an empty tool list produces no rows", () => {
+    expect(toolListRows([])).toEqual([]);
   });
 });
