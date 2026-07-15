@@ -52,6 +52,28 @@ describe("tool storage", () => {
     expect(await tool.execute({})).toBe("x");
   });
 
+  test("tool code containing $ replacement patterns is preserved", async () => {
+    await store.save(makeAddToolInput("dollar-tool", { code: 'return "a$&b$`c$$d$1e";' }));
+
+    const tool = await store.load("dollar-tool");
+
+    expect(await tool.execute({})).toBe("a$&b$`c$$d$1e");
+  });
+
+  test("a description containing a placeholder does not hijack another slot", async () => {
+    await store.save(
+      makeAddToolInput("placeholder-desc", {
+        description: "__CODE__",
+        code: 'return "x";',
+      }),
+    );
+
+    const tool = await store.load("placeholder-desc");
+
+    expect(tool.description).toBe("__CODE__");
+    expect(await tool.execute({})).toBe("x");
+  });
+
   test("a tool's name comes from its filename", async () => {
     await Bun.write(join(toolDir, "from-filename.ts"), makeToolSource());
 

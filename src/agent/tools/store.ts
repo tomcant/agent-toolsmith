@@ -74,8 +74,13 @@ async function loadTool(filePath: string): Promise<Tool> {
 }
 
 function renderTool(input: AddToolInput): string {
-  return template
-    .replace("__DESCRIPTION__", JSON.stringify(input.description))
-    .replace("__SCHEMA__", JSON.stringify(input.inputSchema))
-    .replace("__CODE__", input.code);
+  const values: Record<string, string> = {
+    __DESCRIPTION__: JSON.stringify(input.description),
+    __SCHEMA__: JSON.stringify(input.inputSchema),
+    __CODE__: input.code,
+  };
+  return template.replace(
+    /__DESCRIPTION__|__SCHEMA__|__CODE__/g,
+    (token) => values[token] ?? token,
+  );
 }
