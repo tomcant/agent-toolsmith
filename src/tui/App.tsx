@@ -6,6 +6,7 @@ import { type Command, parseCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
 import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
+import { IntroMessage } from "./components/IntroMessage.tsx";
 import { Overlay } from "./components/Overlay.tsx";
 import { StatusBar } from "./components/StatusBar.tsx";
 import { SystemMessage } from "./components/SystemMessage.tsx";
@@ -23,6 +24,7 @@ export function App({ agent }: AppProps) {
   const { exit } = useApp();
   const abortRef = useRef<AbortController | null>(null);
   const [textInputKey, setTextInputKey] = useState(0);
+  const [showIntro, setShowIntro] = useState(true);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [overlay, setOverlay] = useState<{ title: string; content: ReactNode } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -81,6 +83,7 @@ export function App({ agent }: AppProps) {
     }
 
     setTextInputKey((k) => k + 1);
+    setShowIntro(false);
     setOverlay(null);
 
     try {
@@ -120,6 +123,7 @@ export function App({ agent }: AppProps) {
   return (
     <Box flexDirection="column" gap={1}>
       <Banner />
+      {showIntro && <IntroMessage />}
       {transcript.map((item) => (
         <Box key={`${item.kind}-${item.id}`} paddingX={1}>
           {renderTranscriptItem(item)}
