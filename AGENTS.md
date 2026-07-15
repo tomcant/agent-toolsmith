@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This is the repository for a self-evolving AI agent that runs on the CLI
+This is the repository for Agent Toolsmith, a general-purpose AI agent that writes its own tools
 
 ## Commands
 

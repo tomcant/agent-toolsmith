@@ -12,6 +12,7 @@ import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { ToolList } from "./components/ToolList.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
+import { theme } from "./theme.ts";
 import { applyAgentEvent, markAbortedToolCalls, type TranscriptItem } from "./transcript.ts";
 
 type AppProps = {
@@ -118,8 +119,8 @@ export function App({ agent }: AppProps) {
       )}
       <Box flexDirection="column">
         {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
-        <Box paddingX={1} borderStyle="round" borderColor="cyan" borderDimColor>
-          <Text color="cyan" bold>
+        <Box paddingX={1} borderStyle="round" borderColor={theme.accent} borderDimColor>
+          <Text color={theme.accent} bold>
             ❯{" "}
           </Text>
           <Box flexGrow={1}>

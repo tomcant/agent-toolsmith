@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import type { ToolInput } from "#/agent/tools/types.ts";
+import { theme } from "../theme.ts";
 import { truncate } from "../utils.ts";
 
 type ToolCallProps = {
@@ -25,7 +26,7 @@ export function ToolCall({ name, input, result, aborted }: ToolCallProps) {
       </Box>
       {result ? (
         <Box paddingLeft={2}>
-          <Text color={result.is_error ? "red" : undefined} dimColor={!result.is_error}>
+          <Text color={result.is_error ? theme.error : undefined} dimColor={!result.is_error}>
             {summarise(result.content)}
           </Text>
         </Box>
@@ -43,12 +44,12 @@ function getStatus(
   aborted?: boolean,
 ): { icon: string; color: string } {
   if (!result) {
-    return aborted ? { icon: "⊘", color: "gray" } : { icon: "●", color: "yellow" };
+    return aborted ? { icon: "⊘", color: theme.muted } : { icon: "●", color: theme.running };
   }
   if (result.is_error) {
-    return { icon: "✗", color: "red" };
+    return { icon: "✗", color: theme.error };
   }
-  return { icon: "✓", color: "green" };
+  return { icon: "✓", color: theme.success };
 }
 
 function formatInput(input: ToolInput, max = 80): string {

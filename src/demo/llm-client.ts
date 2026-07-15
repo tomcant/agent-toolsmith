@@ -27,7 +27,7 @@ export class DemoLlmClient implements LlmClient {
 function lastUserMessage(messages: Message[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
-    if (!message || message.role !== "user") {
+    if (message?.role !== "user") {
       continue;
     }
     for (const part of message.content) {

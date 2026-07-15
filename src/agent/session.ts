@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Message } from "./types.ts";
 
-const DEFAULT_ROOT = join(homedir(), ".self-evolving-agent", "sessions");
+const DEFAULT_ROOT = join(homedir(), ".agent-toolsmith", "sessions");
 
 type SessionLog = Message | { kind: "error"; message: string } | { kind: "aborted" };
 
