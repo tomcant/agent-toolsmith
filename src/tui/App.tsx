@@ -1,6 +1,6 @@
 import { Spinner, TextInput } from "@inkjs/ui";
 import { Box, Text, useApp, useInput } from "ink";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Agent } from "#/agent";
 import { type Command, parseCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
@@ -39,6 +39,19 @@ export function App({ agent }: AppProps) {
       abortRef.current?.abort();
     }
   });
+
+  useEffect(() => {
+    const notices = agent.startupNotices();
+    if (notices.length === 0) return;
+    setTranscript((prev) => [
+      ...prev,
+      ...notices.map((content, idx) => ({
+        kind: "system" as const,
+        id: prev.length + idx,
+        content,
+      })),
+    ]);
+  }, [agent]);
 
   const appendSystemMessage = (content: string) => {
     setTranscript((prev) => [...prev, { kind: "system", id: prev.length, content }]);

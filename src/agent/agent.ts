@@ -12,10 +12,15 @@ export class Agent {
     private readonly client: LlmClient,
     private readonly registry: ToolRegistry,
     private readonly session: Session,
+    private readonly notices: string[] = [],
   ) {}
 
   modelInfo(): ModelInfo {
     return { provider: this.client.provider, model: this.client.model };
+  }
+
+  startupNotices(): string[] {
+    return this.notices;
   }
 
   listTools(): ToolMetadata[] {

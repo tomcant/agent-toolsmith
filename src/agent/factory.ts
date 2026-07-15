@@ -17,7 +17,7 @@ export async function createAgent(
   options: CreateAgentOptions = {},
 ): Promise<Agent> {
   const toolDir = await createToolDir(options.toolDir);
-  const toolRegistry = await createToolRegistry(toolDir);
+  const { registry: toolRegistry, skipped } = await createToolRegistry(toolDir);
 
   for (const tool of options.extraTools ?? []) {
     toolRegistry.register(tool, { builtin: true });
@@ -26,5 +26,7 @@ export async function createAgent(
 
   const session = await createSession(options.sessionDir);
 
-  return new Agent(llmClient, toolRegistry, session);
+  const notices = skipped.map(({ file, reason }) => `Skipped tool "${file}": ${reason}`);
+
+  return new Agent(llmClient, toolRegistry, session, notices);
 }

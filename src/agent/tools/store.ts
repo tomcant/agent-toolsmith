@@ -8,26 +8,28 @@ import { validateTool } from "./validate.ts";
 
 export type AddToolInput = ToolMetadata & { code: string };
 
+export type SkippedTool = { file: string; reason: string };
+
 export class ToolStore {
   constructor(private readonly toolDir: string) {}
 
-  async list(): Promise<Tool[]> {
+  async list(): Promise<{ tools: Tool[]; skipped: SkippedTool[] }> {
     const tools = [];
-    const entries = await readdir(this.toolDir);
+    const skipped = [];
 
-    for (const entry of entries) {
+    for (const entry of await readdir(this.toolDir)) {
       if (!entry.endsWith(".ts")) {
         continue;
       }
       try {
         tools.push(await loadTool(join(this.toolDir, entry)));
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.warn(`Skipping ${entry}: ${message}`);
+        const reason = err instanceof Error ? err.message : String(err);
+        skipped.push({ file: entry, reason });
       }
     }
 
-    return tools;
+    return { tools, skipped };
   }
 
   async load(name: string): Promise<Tool> {

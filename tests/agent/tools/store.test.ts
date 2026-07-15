@@ -22,25 +22,28 @@ describe("tool storage", () => {
     await Bun.write(join(toolDir, "some-tool.ts"), makeToolSource());
     await Bun.write(join(toolDir, "another-tool.ts"), makeToolSource());
 
-    const tools = await store.list();
+    const { tools } = await store.list();
 
     expect(tools.map((t) => t.name).sort()).toEqual(["another-tool", "some-tool"]);
   });
 
-  test("invalid files are not listed", async () => {
+  test("invalid files are not listed but are reported as skipped", async () => {
     await Bun.write(join(toolDir, "invalid-tool.ts"), "invalid js {");
 
-    const tools = await store.list();
+    const { tools, skipped } = await store.list();
 
     expect(tools).toEqual([]);
+    expect(skipped.map((s) => s.file)).toEqual(["invalid-tool.ts"]);
+    expect(skipped[0]?.reason).not.toBe("");
   });
 
-  test("non-typescript files are not listed", async () => {
+  test("non-typescript files are not listed or reported", async () => {
     await Bun.write(join(toolDir, "readme.md"), "not a tool");
 
-    const tools = await store.list();
+    const { tools, skipped } = await store.list();
 
     expect(tools).toEqual([]);
+    expect(skipped).toEqual([]);
   });
 
   test("tools can be loaded by name", async () => {
@@ -77,7 +80,9 @@ describe("tool storage", () => {
   test("a tool's name comes from its filename", async () => {
     await Bun.write(join(toolDir, "from-filename.ts"), makeToolSource());
 
-    const [listed] = await store.list();
+    const {
+      tools: [listed],
+    } = await store.list();
     const loaded = await store.load("from-filename");
 
     expect(listed?.name).toBe("from-filename");
@@ -87,9 +92,11 @@ describe("tool storage", () => {
   test("a file whose name is not a valid tool name is skipped", async () => {
     await Bun.write(join(toolDir, "Bad Name.ts"), makeToolSource());
 
-    const tools = await store.list();
+    const { tools, skipped } = await store.list();
 
     expect(tools).toEqual([]);
+    expect(skipped.map((s) => s.file)).toEqual(["Bad Name.ts"]);
+    expect(skipped[0]?.reason).not.toBe("");
   });
 
   test("unable to load a tool with an unknown name", async () => {
@@ -120,7 +127,7 @@ describe("tool storage", () => {
     const brokenToolInput = makeAddToolInput("tool-name", { code: "invalid js {" });
     await expect(store.save(brokenToolInput)).rejects.toThrow();
 
-    expect(await store.list()).toEqual([]);
+    expect((await store.list()).tools).toEqual([]);
     expect(await Bun.file(join(toolDir, "tool-name.ts")).exists()).toBe(false);
   });
 
@@ -139,7 +146,7 @@ describe("tool storage", () => {
 
     await store.delete("tool-name");
 
-    expect(await store.list()).toEqual([]);
+    expect((await store.list()).tools).toEqual([]);
   });
 
   test("deleting a missing tool is a no-op", async () => {

@@ -48,4 +48,20 @@ describe("agent creation", () => {
 
     expect(llm.calls[0]?.tools?.map((t) => t.name)).toContain("extra-tool");
   });
+
+  test("has no startup notices when every tool loads", async () => {
+    const agent = await createAgent(new LlmClientSpy(), { toolDir, sessionDir });
+
+    expect(agent.startupNotices()).toEqual([]);
+  });
+
+  test("reports tools that failed to load as startup notices", async () => {
+    await Bun.write(join(toolDir, "broken.ts"), "invalid js {");
+
+    const agent = await createAgent(new LlmClientSpy(), { toolDir, sessionDir });
+
+    const notices = agent.startupNotices();
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toContain("broken.ts");
+  });
 });
