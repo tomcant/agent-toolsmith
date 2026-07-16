@@ -15,7 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
     "@inkjs/ui": "^2.0.0",
-    "ink": "^7.1.0",
+    "ink": "^7.1.1",
     "react": "^19.2.7"
   },
   "devDependencies": {
@@ -24,6 +24,6 @@
     "@types/react": "^19.2.17"
   },
   "peerDependencies": {
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }
