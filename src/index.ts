@@ -6,6 +6,9 @@ import { createAgent } from "./agent";
 import { createDemoAgent } from "./demo";
 import systemPrompt from "./prompt.md";
 import { App } from "./tui/App.tsx";
+import { initColorScheme } from "./tui/color-scheme.ts";
+
+await initColorScheme();
 
 let altScreenActive = false;
 process.on("exit", leaveAltScreen);

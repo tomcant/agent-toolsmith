@@ -1,7 +1,8 @@
-import { Spinner, TextInput } from "@inkjs/ui";
+import { defaultTheme, extendTheme, Spinner, TextInput, ThemeProvider } from "@inkjs/ui";
 import { Box, Text, useApp, useInput } from "ink";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Agent } from "#/agent";
+import { isLightScheme } from "./color-scheme.ts";
 import { type Command, parseCommand } from "./commands.ts";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
 import { Banner } from "./components/Banner.tsx";
@@ -15,6 +16,16 @@ import { ToolList } from "./components/ToolList.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
 import { theme } from "./theme.ts";
 import { applyAgentEvent, markAbortedToolCalls, type TranscriptItem } from "./transcript.ts";
+
+const inkUiTheme = extendTheme(defaultTheme, {
+  components: {
+    Spinner: {
+      styles: {
+        frame: () => ({ color: theme.accent }),
+      },
+    },
+  },
+});
 
 type AppProps = {
   agent: Agent;
@@ -121,37 +132,44 @@ export function App({ agent }: AppProps) {
   };
 
   return (
-    <Box flexDirection="column" gap={1}>
-      <Banner />
-      {showIntro && <IntroMessage />}
-      {transcript.map((item) => (
-        <Box key={`${item.kind}-${item.id}`} paddingX={1}>
-          {renderTranscriptItem(item)}
-        </Box>
-      ))}
-      {busy && (
-        <Box paddingX={1}>
-          <Spinner label="Thinking..." />
-        </Box>
-      )}
-      <Box flexDirection="column">
-        {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
-        <Box paddingX={1} borderStyle="round" borderColor={theme.accent} borderDimColor>
-          <Text color={theme.accent} bold>
-            ❯{" "}
-          </Text>
-          <Box flexGrow={1}>
-            <TextInput
-              key={textInputKey}
-              isDisabled={busy}
-              placeholder="Type a message (Ctrl+C or /exit to quit)"
-              onSubmit={handleSubmit}
-            />
+    <ThemeProvider theme={inkUiTheme}>
+      <Box flexDirection="column" gap={1}>
+        <Banner />
+        {showIntro && <IntroMessage />}
+        {transcript.map((item) => (
+          <Box key={`${item.kind}-${item.id}`} paddingX={1}>
+            {renderTranscriptItem(item)}
           </Box>
+        ))}
+        {busy && (
+          <Box paddingX={1}>
+            <Spinner label="Thinking..." />
+          </Box>
+        )}
+        <Box flexDirection="column">
+          {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
+          <Box
+            paddingX={1}
+            borderStyle="round"
+            borderColor={theme.accent}
+            borderDimColor={!isLightScheme()}
+          >
+            <Text color={theme.accent} bold>
+              ❯{" "}
+            </Text>
+            <Box flexGrow={1}>
+              <TextInput
+                key={textInputKey}
+                isDisabled={busy}
+                placeholder="Type a message (Ctrl+C or /exit to quit)"
+                onSubmit={handleSubmit}
+              />
+            </Box>
+          </Box>
+          <StatusBar {...agent.modelInfo()} />
         </Box>
-        <StatusBar {...agent.modelInfo()} />
       </Box>
-    </Box>
+    </ThemeProvider>
   );
 }
 

@@ -12,7 +12,7 @@ export function UserMessage({ content }: UserMessageProps) {
         <Text color={theme.accent}>{"> "}</Text>
       </Box>
       <Box flexGrow={1}>
-        <Text>{content}</Text>
+        <Text backgroundColor={theme.userMessageBg}>{content}</Text>
       </Box>
     </Box>
   );
