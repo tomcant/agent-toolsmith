@@ -4,9 +4,9 @@
 
 # Agent Toolsmith
 
-A general-purpose AI agent that writes its own tools. When it runs into a task it can't do, it builds the capability and keeps it for next time.
+A general-purpose AI agent that writes its own tools.
 
-Most agents ship with a fixed toolset. This one starts with a single built-in tool — `evolve` — and builds the rest on demand. Each new tool is validated, saved to disk, and available immediately, compounding the agent's abilities across sessions.
+It starts with one built-in tool, `evolve`, and writes the rest as it needs them. When it hits a task it can't do yet, it writes a new tool, saves it to disk and uses it right away. New tools persist across sessions, so the agent's capabilities grow the more you use it.
 
 > [!CAUTION]
 > This is a personal experiment for didactic purposes only. It's rough around the edges and not battle-tested in any way.
