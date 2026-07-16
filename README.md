@@ -9,9 +9,7 @@ A general-purpose AI agent that writes its own tools.
 It starts with one built-in tool, `evolve`, and writes the rest as it needs them. When it hits a task it can't do yet, it writes a new tool, saves it to disk and uses it right away. New tools persist across sessions, so the agent's capabilities grow the more you use it.
 
 > [!CAUTION]
-> This is a personal experiment for didactic purposes only. It's rough around the edges and not battle-tested in any way.
->
-> Tool code runs in-process with your privileges — there is no sandbox (for now). The system prompt instructs the agent not to write tools that delete data, leak secrets, or make irreversible changes unless asked, but of course this cannot be trusted.
+> This is a personal experiment for didactic purposes only. It's rough around the edges and not battle-tested in any way. Tool code runs in-process with your privileges — there is no sandbox (for now). The system prompt instructs the model not to write tools that delete data, leak secrets, or make irreversible changes unless asked, but of course this cannot be trusted.
 
 ## How It Works
 
@@ -102,42 +100,6 @@ Press `Esc` to abort an in-flight response or close the overlay. Press `Ctrl+C` 
 | --------------------------------- | --------------------------------------------- |
 | `~/.agent-toolsmith/tools/`       | Evolved tools, one TypeScript file per tool   |
 | `~/.agent-toolsmith/sessions/`    | Per-session JSONL transcripts                 |
-
-## Architecture
-
-Three layers — the **agent core**, a **pluggable LLM adapter**, and the **terminal UI** — held apart by two small interfaces. The agent drives the conversation without knowing which model backs it or how its output is shown: it reaches the model through `LlmClient` and emits a stream of `AgentEvent`s the UI renders. Everything else plugs into one of those two seams.
-
-**`LlmClient`** (`agent/types.ts`) — a single `send(messages, tools, signal)` method returning an async stream of `text_delta`, `tool_call`, and a final `complete` event. To add a provider, write an adapter and list it in `adapters/llm/index.ts`; `resolveLlmClient` picks the first whose environment keys are present.
-
-**`Tool`** (`agent/tools/types.ts`) — `{ name, description, inputSchema, execute }`. The registry holds tools in memory; the store persists evolved ones to disk as TypeScript and reloads them on launch. `evolve` is itself just a built-in tool that writes to the registry — the same seam every evolved tool flows through.
-
-```
-src/
-├── index.ts                 Entry point — resolve an LLM client, construct the agent, render the TUI
-│
-├── agent/
-│   ├── agent.ts             Agentic loop — turn() streams events, runs tools, feeds results back
-│   ├── factory.ts           createAgent() — assembles registry, built-ins, and session
-│   ├── session.ts           JSONL session logging
-│   ├── types.ts             Core interfaces — LlmClient, AgentEvent, Message
-│   └── tools/
-│       ├── registry.ts      In-memory tool registry (register / add / remove / list)
-│       ├── store.ts         Persists tools to disk; stage → validate → promote
-│       ├── factory.ts       createToolRegistry() — loads saved tools on launch
-│       ├── validate.ts      Tool name and metadata validation
-│       ├── types.ts         Tool / ToolMetadata types
-│       └── builtins/
-│           ├── evolve.ts    The self-evolution tool
-│           └── tool.ts.tpl  Template evolved tools are rendered into
-│
-├── adapters/
-│   └── llm/
-│       ├── index.ts         resolveLlmClient() — selects a provider from env keys
-│       └── anthropic.ts     Anthropic implementation of LlmClient
-│
-├── tui/                     Ink/React terminal UI — App, components, slash commands, transcript
-└── demo/                    Fake LlmClient, sample tools, and scripted scenarios (env DEMO=1)
-```
 
 ## Development
 
