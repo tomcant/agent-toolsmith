@@ -14,8 +14,10 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
+    "@byteland/ink-scroll-bar": "^1.0.0",
     "@inkjs/ui": "^2.0.0",
     "ink": "^7.1.1",
+    "ink-scroll-view": "0.3.7",
     "marked": "^18.0.6",
     "marked-terminal": "^7.3.0",
     "react": "^19.2.7"

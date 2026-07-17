@@ -3,7 +3,7 @@ import { theme } from "../theme.ts";
 
 export function IntroMessage() {
   return (
-    <Box paddingX={1}>
+    <Box>
       <Text>
         <Text dimColor>Use </Text>
         <Text color={theme.accent}>/tools</Text>

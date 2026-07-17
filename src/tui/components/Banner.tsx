@@ -101,7 +101,7 @@ export const Banner = memo(function Banner() {
   }, [animate]);
 
   return (
-    <Box flexDirection="column" paddingX={1} paddingTop={1}>
+    <Box flexDirection="column">
       {renderFrame(frame).map(({ key, cells }) => (
         <Text key={key}>
           {cells.map(({ key: cellKey, char, color }) => (
