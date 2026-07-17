@@ -119,3 +119,13 @@ prek -a  # lint, type-check, and test
 ```
 
 CI runs the same lint, type-check, and test suite on every push via GitHub Actions.
+
+### Demo mode
+
+Run the agent against a fake LLM client with scripted scenarios and sample tools — no API key required:
+
+```sh
+bun demo
+```
+
+This sets `DEMO=1`, which swaps in `DemoLlmClient` so you can explore the TUI and tool flow offline.
