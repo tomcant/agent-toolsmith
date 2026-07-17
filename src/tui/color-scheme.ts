@@ -38,7 +38,7 @@ function detectColorScheme(): Promise<ColorScheme> {
   return new Promise<ColorScheme>((resolve) => {
     const timeout = setTimeout(() => {
       restore();
-      resolve("dark");
+      settle("dark");
     }, 200);
 
     let response = "";
@@ -48,7 +48,7 @@ function detectColorScheme(): Promise<ColorScheme> {
       if (!DA1_RESPONSE.test(response)) return;
 
       restore();
-      resolve(classify(response));
+      settle(classify(response));
     }
 
     function restore() {
@@ -56,6 +56,10 @@ function detectColorScheme(): Promise<ColorScheme> {
       process.stdin.off("data", onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
+    }
+
+    function settle(scheme: ColorScheme) {
+      setTimeout(() => resolve(scheme), 0);
     }
 
     process.stdin.setRawMode(true);

@@ -64,11 +64,16 @@ Install dependencies:
 bun install
 ```
 
-Set your API key and start an interactive chat:
+Start an interactive chat:
+
+```sh
+bun run src/index.ts
+```
+
+The agent prompts for your Anthropic API key on launch if it isn't already set. To skip the prompt, set it in your environment beforehand:
 
 ```sh
 export ANTHROPIC_API_KEY="sk-ant-..."
-bun run src/index.ts
 ```
 
 ### Standalone binary

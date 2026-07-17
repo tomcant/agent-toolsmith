@@ -7,6 +7,7 @@ import { createDemoAgent } from "./demo";
 import systemPrompt from "./prompt.md";
 import { App } from "./tui/App.tsx";
 import { initColorScheme } from "./tui/color-scheme.ts";
+import { ApiKeyPrompt } from "./tui/components/ApiKeyPrompt.tsx";
 
 await initColorScheme();
 
@@ -21,7 +22,9 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
 }
 
 const agent =
-  process.env.DEMO === "1" ? await createDemoAgent() : await createAgent(resolveLlmClientOrExit());
+  process.env.DEMO === "1"
+    ? await createDemoAgent()
+    : await createAgent(await resolveLlmClientInteractive());
 
 const { waitUntilExit } = render(createElement(App, { agent }), { exitOnCtrlC: true });
 try {
@@ -30,24 +33,60 @@ try {
   leaveAltScreen();
 }
 
-function resolveLlmClientOrExit() {
-  try {
-    return resolveLlmClient(systemPrompt);
-  } catch (error) {
-    leaveAltScreen();
-    console.error(`Error: ${error instanceof Error ? error.message : error}`);
-    process.exit(1);
-  }
+async function resolveLlmClientInteractive() {
+  const configured = resolveLlmClient(systemPrompt);
+  if (configured) return configured;
+
+  const key = await promptForApiKey("ANTHROPIC_API_KEY");
+  process.env.ANTHROPIC_API_KEY = key;
+
+  clearScreen();
+
+  const client = resolveLlmClient(systemPrompt);
+  if (client) return client;
+
+  leaveAltScreen();
+  console.error("Error: could not initialise an LLM client from the provided key.");
+  process.exit(1);
+}
+
+function promptForApiKey(envVarName: string): Promise<string> {
+  return new Promise((resolve) => {
+    let submitted = false;
+    const { unmount, waitUntilExit } = render(
+      createElement(ApiKeyPrompt, {
+        envVarName,
+        onSubmit: (key: string) => {
+          submitted = true;
+          unmount();
+          resolve(key);
+        },
+      }),
+      { exitOnCtrlC: true },
+    );
+    void waitUntilExit().then(() => {
+      if (!submitted) {
+        leaveAltScreen();
+        process.exit(0);
+      }
+    });
+  });
 }
 
 function enterAltScreen() {
   if (!process.stdout.isTTY) return;
-  writeSync(process.stdout.fd, "\x1b[?1049h\x1b[2J\x1b[H");
+  writeSync(process.stdout.fd, "\x1b[?1049h");
   altScreenActive = true;
+  clearScreen();
 }
 
 function leaveAltScreen() {
   if (!altScreenActive) return;
   writeSync(process.stdout.fd, "\x1b[?1049l\x1b[?25h");
   altScreenActive = false;
+}
+
+function clearScreen() {
+  if (!process.stdout.isTTY) return;
+  writeSync(process.stdout.fd, "\x1b[2J\x1b[H");
 }
