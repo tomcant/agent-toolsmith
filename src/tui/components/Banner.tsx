@@ -112,7 +112,7 @@ export const Banner = memo(function Banner() {
         </Text>
       ))}
       <Box marginTop={1}>
-        <Text bold color={MID}>
+        <Text bold color={theme.accent}>
           Agent Toolsmith
         </Text>
         <Text dimColor> v{pkg.version}</Text>
