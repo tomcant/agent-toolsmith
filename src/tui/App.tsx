@@ -139,7 +139,6 @@ export function App({ agent }: AppProps) {
     }
 
     setTextInputKey((k) => k + 1);
-    setShowIntro(false);
     setOverlay(null);
 
     try {
@@ -153,8 +152,10 @@ export function App({ agent }: AppProps) {
       return;
     }
 
-    setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: input }]);
     stickToBottom.current = true;
+    setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: input }]);
+    setShowIntro(false);
+    setElapsedMs(null);
     setWorking(true);
 
     const startedAt = Date.now();
@@ -206,6 +207,13 @@ export function App({ agent }: AppProps) {
                 {renderTranscriptItem(item)}
               </Box>
             ))}
+            {elapsedMs !== null && (
+              <Box marginBottom={1}>
+                <Text dimColor italic>
+                  Worked for {formatDuration(elapsedMs ?? 0)}
+                </Text>
+              </Box>
+            )}
           </ScrollView>
           <ScrollBar
             placement="inset"
@@ -216,16 +224,10 @@ export function App({ agent }: AppProps) {
             autoHide
           />
         </Box>
-        <Box flexShrink={0} flexDirection="column">
-          {(working || elapsedMs !== null) && (
-            <Box marginY={1} paddingX={1}>
-              {working ? (
-                <Spinner label="Working..." />
-              ) : (
-                <Text color={theme.muted} italic>
-                  Worked for {formatDuration(elapsedMs ?? 0)}
-                </Text>
-              )}
+        <Box flexDirection="column" flexShrink={0}>
+          {working && (
+            <Box marginBottom={1} paddingX={1}>
+              <Spinner label="Working..." />
             </Box>
           )}
           {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
