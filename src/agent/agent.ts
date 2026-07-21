@@ -31,6 +31,11 @@ export class Agent {
     await this.registry.remove(name);
   }
 
+  async clear(): Promise<void> {
+    this.messages = [];
+    await this.session.log({ kind: "cleared" });
+  }
+
   async *turn(input: string, signal?: AbortSignal): AsyncGenerator<AgentEvent> {
     const userMessage: Message = {
       role: "user",

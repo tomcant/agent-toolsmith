@@ -12,6 +12,10 @@ describe("slash commands", () => {
     expect(parseCommand("  /exit\n")).toEqual({ kind: "exit" });
   });
 
+  test("/clear asks to reset the conversation", () => {
+    expect(parseCommand("/clear")).toEqual({ kind: "clear" });
+  });
+
   test("/tools asks for the current tool inventory", () => {
     expect(parseCommand("/tools")).toEqual({ kind: "tools_list" });
   });

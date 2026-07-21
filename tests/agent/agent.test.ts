@@ -455,6 +455,39 @@ describe("agent turns", () => {
     ]);
   });
 
+  test("clearing drops earlier turns from the conversation", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "text_delta", text: "Reply 1" },
+        { type: "complete", response: [{ type: "text", text: "Reply 1" }] },
+      ],
+      [
+        { type: "text_delta", text: "Reply 2" },
+        { type: "complete", response: [{ type: "text", text: "Reply 2" }] },
+      ],
+    ]);
+    const agent = new Agent(llm, registry, session);
+
+    await collect(agent.turn("User message 1"));
+    await agent.clear();
+    await collect(agent.turn("User message 2"));
+
+    expect(llm.calls[1]?.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "User message 2" }] },
+    ]);
+  });
+
+  test("clearing is recorded in the session log", async () => {
+    const agent = new Agent(new LlmClientSpy([]), registry, session);
+    setSystemTime(new Date("2026-04-22T12:00:00.000Z"));
+
+    await agent.clear();
+
+    expect(await readSessionLog(sessionPath)).toEqual([
+      { time: "2026-04-22T12:00:00.000Z", kind: "cleared" },
+    ]);
+  });
+
   test("registered tools are exposed as metadata", () => {
     registry.register(makeTool("t1", { description: "first" }));
     registry.register(makeTool("t2", { description: "second" }));

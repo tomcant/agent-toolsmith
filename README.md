@@ -95,6 +95,7 @@ Type a message to chat with the agent. It will create and run tools as needed.
 | ---------------------- | ---------------------- |
 | `/tools`               | List available tools   |
 | `/tools remove <name>` | Remove a tool          |
+| `/clear`               | Clear the conversation |
 | `/exit`, `/quit`       | Exit the agent         |
 
 Press `Esc` to abort an in-flight response or close the overlay. Press `Ctrl+C` to quit.

@@ -3,6 +3,7 @@ import type { ToolMetadata } from "#/agent/tools/types.ts";
 export type Command =
   | { kind: "tools_list" }
   | { kind: "tools_remove"; name: string }
+  | { kind: "clear" }
   | { kind: "exit" };
 
 export type ToolListRow = { name: string; description: string };
@@ -17,6 +18,10 @@ export function parseCommand(input: string): Command | null {
 
   if (head === "exit" || head === "quit") {
     return { kind: "exit" };
+  }
+
+  if (head === "clear") {
+    return { kind: "clear" };
   }
 
   if (head === "tools") {

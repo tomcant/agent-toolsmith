@@ -121,6 +121,12 @@ export function App({ agent }: AppProps) {
         await agent.removeTool(command.name);
         appendSystemMessage(`Removed tool '${command.name}'`);
         return;
+      case "clear":
+        await agent.clear();
+        setTranscript([]);
+        setShowIntro(true);
+        setElapsedMs(null);
+        return;
       case "exit":
         exit();
         return;

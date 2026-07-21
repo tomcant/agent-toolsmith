@@ -6,7 +6,11 @@ import type { Message } from "./types.ts";
 
 const DEFAULT_ROOT = join(homedir(), ".agent-toolsmith", "sessions");
 
-type SessionLog = Message | { kind: "error"; message: string } | { kind: "aborted" };
+type SessionLog =
+  | Message
+  | { kind: "error"; message: string }
+  | { kind: "aborted" }
+  | { kind: "cleared" };
 
 export class Session {
   constructor(private readonly path: string) {}
