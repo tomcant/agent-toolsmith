@@ -10,6 +10,7 @@ export function runScenario(name: string): AsyncGenerator<LlmEvent> {
 const scenarios: Record<string, () => AsyncGenerator<LlmEvent>> = {
   text: textScenario,
   "long-text": longTextScenario,
+  markdown: markdownScenario,
   tool: toolScenario,
   "multi-tool": multiToolScenario,
   "tool-error": toolErrorScenario,
@@ -27,6 +28,26 @@ async function* longTextScenario(): AsyncGenerator<LlmEvent> {
     "Proin finibus ante in pretium dictum. Cras tempus tempor posuere. Donec sodales eget justo a cursus. Suspendisse sollicitudin sit amet turpis eget fermentum.",
   ];
   yield* streamTextAndComplete(paragraphs.join("\n\n"));
+}
+
+async function* markdownScenario(): AsyncGenerator<LlmEvent> {
+  const markdown = [
+    "# Markdown showcase",
+    "Plain text with **bold**, _italic_, and ~~strike-through~~ words, plus an `inline code` span.",
+    "## Unordered list",
+    "- First item\n- Second item\n  - Nested item\n- Third item",
+    "## Ordered list",
+    "1. First step\n2. Second step\n3. Third step",
+    "## Table",
+    "| Tool | Purpose | Built-in |\n| ---- | ------- | :------: |\n| echo | Repeat input | yes |\n| search | Find things | yes |\n| shell | Execute a command | yes |\n| now | Print the current time | yes |",
+    "## Code fence",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: not real code
+    "```typescript\nexport function greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n```",
+    "## Blockquote",
+    "> Then you'll see that it is not the spoon that bends. It is only yourself.",
+    "And a [link](https://example.com) to round things off.",
+  ].join("\n\n");
+  yield* streamTextAndComplete(markdown);
 }
 
 async function* toolScenario(): AsyncGenerator<LlmEvent> {
