@@ -22,7 +22,7 @@ async function resolveLlmClientInteractive() {
   const configured = resolveLlmClient(systemPrompt);
   if (configured) return configured;
 
-  const key = await promptForApiKey("ANTHROPIC_API_KEY");
+  const key = await promptForApiKey();
   process.env.ANTHROPIC_API_KEY = key;
 
   const client = resolveLlmClient(systemPrompt);
@@ -32,12 +32,11 @@ async function resolveLlmClientInteractive() {
   process.exit(1);
 }
 
-function promptForApiKey(envVarName: string): Promise<string> {
+function promptForApiKey(): Promise<string> {
   return new Promise((resolve) => {
     let submitted = false;
     const { unmount, waitUntilExit } = renderFullscreen(
       createElement(ApiKeyPrompt, {
-        envVarName,
         onSubmit: (key: string) => {
           submitted = true;
           unmount();
