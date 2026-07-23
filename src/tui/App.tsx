@@ -198,22 +198,15 @@ export function App({ agent }: AppProps) {
               followOutput();
             }}
           >
-            <Box key="header" flexDirection="column" marginY={1} gap={1}>
+            <Box key="header" flexDirection="column" gap={1}>
               <Banner />
               {showIntro && <IntroMessage />}
             </Box>
             {transcript.map((item) => (
-              <Box key={`${item.kind}-${item.id}`} marginBottom={1}>
+              <Box key={`${item.kind}-${item.id}`} marginTop={1}>
                 {renderTranscriptItem(item)}
               </Box>
             ))}
-            {elapsedMs !== null && (
-              <Box marginBottom={1}>
-                <Text dimColor italic>
-                  Worked for {formatDuration(elapsedMs ?? 0)}
-                </Text>
-              </Box>
-            )}
           </ScrollView>
           <ScrollBar
             placement="inset"
@@ -224,12 +217,25 @@ export function App({ agent }: AppProps) {
             autoHide
           />
         </Box>
-        <Box flexDirection="column" flexShrink={0}>
-          {working && (
-            <Box marginBottom={1} paddingX={1}>
-              <Spinner label="Working..." />
+        <Box flexDirection="column" paddingTop={1}>
+          <Box paddingX={1}>
+            <Box flexGrow={1}>
+              {working ? (
+                <Spinner />
+              ) : (
+                elapsedMs !== null && (
+                  <Text dimColor italic>
+                    Worked for {formatDuration(elapsedMs)}
+                  </Text>
+                )
+              )}
             </Box>
-          )}
+            {contentHeight > viewportHeight && (
+              <Box>
+                <Text dimColor>↑↓ PgUp/PgDn</Text>
+              </Box>
+            )}
+          </Box>
           {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
           <Box
             paddingX={1}

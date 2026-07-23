@@ -49,7 +49,7 @@ function getStatus(
   if (result.is_error) {
     return { icon: "✗", color: theme.error };
   }
-  return { icon: "✓", color: theme.success };
+  return { icon: "●", color: theme.success };
 }
 
 function formatInput(input: ToolInput, max = 80): string {
