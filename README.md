@@ -81,7 +81,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 Compile a self-contained executable (bundles the Bun runtime and all dependencies):
 
 ```sh
-bun run build.ts
+bun run build
 ./agent
 ```
 

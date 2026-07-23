@@ -45,6 +45,8 @@ async function* markdownScenario(): AsyncGenerator<LlmEvent> {
     "```typescript\nexport function greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n```",
     "## Blockquote",
     "> Then you'll see that it is not the spoon that bends. It is only yourself.",
+    "## Horizontal rule",
+    "---",
     "And a [link](https://example.com) to round things off.",
   ].join("\n\n");
   yield* streamTextAndComplete(markdown);
