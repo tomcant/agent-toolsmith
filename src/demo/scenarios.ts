@@ -37,7 +37,7 @@ async function* markdownScenario(): AsyncGenerator<LlmEvent> {
     "## Unordered list",
     "- First item\n- Second item\n  - Nested item\n- Third item with **bold** text",
     "## Ordered list",
-    "1. First step\n2. Second step\n3. Third step with _italic_ text",
+    "1. First step\n2. Second step\n  i. Nested step\n3. Third step with _italic_ text",
     "## Table",
     "| Tool | Purpose | Built-in |\n| ---- | ------- | :------: |\n| echo | Repeat input | yes |\n| search | Find things | yes |\n| shell | Execute a command | yes |\n| now | Print the current time | yes |",
     "## Code fence",
