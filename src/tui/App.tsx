@@ -198,7 +198,7 @@ export function App({ agent }: AppProps) {
               followOutput();
             }}
           >
-            <Box key="header" flexDirection="column" gap={1}>
+            <Box key="header" flexDirection="column" paddingTop={1} gap={1}>
               <Banner />
               {showIntro && <IntroMessage />}
             </Box>
@@ -221,7 +221,10 @@ export function App({ agent }: AppProps) {
           <Box paddingX={1}>
             <Box flexGrow={1}>
               {working ? (
-                <Spinner />
+                <Box gap={1}>
+                  <Spinner label="Working..." />
+                  <Text dimColor>(esc to interrupt)</Text>
+                </Box>
               ) : (
                 elapsedMs !== null && (
                   <Text dimColor italic>
