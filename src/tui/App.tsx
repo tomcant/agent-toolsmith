@@ -29,6 +29,12 @@ const inkUiTheme = extendTheme(defaultTheme, {
   },
 });
 
+type OverlayState = {
+  kind: "tools";
+  title: string;
+  content: ReactNode;
+};
+
 type AppProps = {
   agent: Agent;
 };
@@ -41,7 +47,7 @@ export function App({ agent }: AppProps) {
   const [textInputKey, setTextInputKey] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
-  const [overlay, setOverlay] = useState<{ title: string; content: ReactNode } | null>(null);
+  const [overlay, setOverlay] = useState<OverlayState | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [working, setWorking] = useState(false);
 
@@ -109,22 +115,27 @@ export function App({ agent }: AppProps) {
     setTranscript((prev) => [...prev, { kind: "system", id: prev.length, content }]);
   };
 
+  const toolsOverlay = (): OverlayState => ({
+    kind: "tools",
+    title: "Tools",
+    content: <ToolList tools={agent.listTools()} />,
+  });
+
   const handleCommand = async (command: Command) => {
     switch (command.kind) {
       case "tools_list":
-        setOverlay({
-          title: "Tools",
-          content: <ToolList tools={agent.listTools()} />,
-        });
+        setOverlay(toolsOverlay());
         return;
       case "tools_remove":
         await agent.removeTool(command.name);
         appendSystemMessage(`Removed tool '${command.name}'`);
+        setOverlay((prev) => (prev?.kind === "tools" ? toolsOverlay() : prev));
         return;
       case "clear":
         await agent.clear();
         setTranscript([]);
         setShowIntro(true);
+        setOverlay(null);
         setElapsedMs(null);
         return;
       case "exit":
@@ -134,12 +145,8 @@ export function App({ agent }: AppProps) {
   };
 
   const handleSubmit = async (input: string) => {
-    if (input.trim() === "") {
-      return;
-    }
-
+    if (input.trim() === "") return;
     setTextInputKey((k) => k + 1);
-    setOverlay(null);
 
     try {
       const command = parseCommand(input);
@@ -155,6 +162,7 @@ export function App({ agent }: AppProps) {
     stickToBottom.current = true;
     setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: input }]);
     setShowIntro(false);
+    setOverlay(null);
     setElapsedMs(null);
     setWorking(true);
 
