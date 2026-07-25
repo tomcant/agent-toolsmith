@@ -20,7 +20,7 @@ describe("agent creation", () => {
     await rm(sessionDir, { recursive: true, force: true });
   });
 
-  test("registers the evolve tool", async () => {
+  test("registers the builtin tools", async () => {
     const llm = new LlmClientSpy([
       [
         { type: "text_delta", text: "Reply" },
@@ -31,7 +31,7 @@ describe("agent creation", () => {
 
     await collect(agent.turn("User message"));
 
-    expect(llm.calls[0]?.tools?.map((t) => t.name)).toEqual(["evolve"]);
+    expect(llm.calls[0]?.tools?.map((t) => t.name)).toEqual(["evolve", "inspect"]);
   });
 
   test("registers the extra tools", async () => {
@@ -47,6 +47,7 @@ describe("agent creation", () => {
     await collect(agent.turn("User message"));
 
     expect(llm.calls[0]?.tools?.map((t) => t.name)).toContain("extra-tool");
+    expect(agent.listTools().map((t) => t.name)).toEqual(["extra-tool"]);
   });
 
   test("has no startup notices when every tool loads", async () => {

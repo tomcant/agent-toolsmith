@@ -36,6 +36,10 @@ export class ToolStore {
     return loadTool(this.pathFor(name));
   }
 
+  async read(name: string): Promise<string> {
+    return Bun.file(this.pathFor(name)).text();
+  }
+
   async save(input: AddToolInput): Promise<void> {
     // Stage, validate, promote: new code never touches the real tool path until
     // it has proven to load, so a failed save leaves the previous version intact.

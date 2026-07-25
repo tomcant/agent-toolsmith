@@ -103,6 +103,19 @@ describe("tool storage", () => {
     await expect(store.load("missing")).rejects.toThrow();
   });
 
+  test("a saved tool's source can be read back", async () => {
+    await store.save(makeAddToolInput("tool-name", { code: 'return "x";' }));
+
+    const source = await store.read("tool-name");
+
+    expect(source).toContain('return "x";');
+    expect(source).toContain("export const tool");
+  });
+
+  test("unable to read the source of a tool with an unknown name", async () => {
+    await expect(store.read("missing")).rejects.toThrow();
+  });
+
   test("tools can be replaced", async () => {
     await store.save(makeAddToolInput("tool-name", { code: 'return "old";' }));
     await store.save(makeAddToolInput("tool-name", { code: 'return "new";' }));

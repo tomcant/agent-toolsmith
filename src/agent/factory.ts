@@ -1,6 +1,7 @@
 import { Agent } from "./agent.ts";
 import { createSession } from "./session.ts";
 import { evolve } from "./tools/builtins/evolve.ts";
+import { inspect } from "./tools/builtins/inspect.ts";
 import { createToolDir } from "./tools/dir.ts";
 import { createToolRegistry } from "./tools/factory.ts";
 import type { Tool } from "./tools/types.ts";
@@ -20,9 +21,10 @@ export async function createAgent(
   const { registry: toolRegistry, skipped } = await createToolRegistry(toolDir);
 
   for (const tool of options.extraTools ?? []) {
-    toolRegistry.register(tool, { builtin: true });
+    toolRegistry.register(tool);
   }
   toolRegistry.register(evolve(toolRegistry), { builtin: true });
+  toolRegistry.register(inspect(toolRegistry), { builtin: true });
 
   const session = await createSession(options.sessionDir);
 

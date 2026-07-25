@@ -16,6 +16,22 @@ export class ToolRegistry {
     return this.tools.get(name);
   }
 
+  isBuiltin(name: string): boolean {
+    return this.builtins.has(name);
+  }
+
+  async source(name: string): Promise<string> {
+    if (!this.tools.has(name)) {
+      throw new Error(`Unknown tool: ${name}`);
+    }
+
+    if (this.builtins.has(name)) {
+      throw new Error(`Cannot read source of builtin tool: ${name}`);
+    }
+
+    return this.store.read(name);
+  }
+
   register(tool: Tool, opts: { builtin?: boolean } = {}): void {
     if (this.builtins.has(tool.name)) {
       throw new Error(`Cannot overwrite builtin tool: ${tool.name}`);

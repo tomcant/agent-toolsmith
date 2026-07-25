@@ -6,7 +6,7 @@
 
 A general-purpose AI agent that writes its own tools.
 
-It starts with one built-in tool, `evolve`, and writes the rest as it needs them. When it hits a task it can't do yet, it writes a new tool, saves it to disk and uses it right away. New tools persist across sessions, so the agent's capabilities grow the more you use it.
+It starts with two built-in tools — `evolve` to write a tool and `inspect` to read one back — and writes the rest as it needs them. When it hits a task it can't do yet, it writes a new tool, saves it to disk and uses it right away. New tools persist across sessions, so the agent's capabilities grow the more you use it.
 
 > [!CAUTION]
 > This is a personal experiment for didactic purposes only. It's rough around the edges and not battle-tested in any way. Tool code runs in-process with your privileges — there is no sandbox (for now). The system prompt instructs the model not to write tools that delete data, leak secrets, or make irreversible changes unless asked, but of course this cannot be trusted.
@@ -42,7 +42,9 @@ Task needs a capability the agent lacks
   Registered and callable immediately — available in this and future sessions
 ```
 
-The `code` is the body of an `async (input) => { ... }` function that must return a string. Because it runs inside that function, tools use dynamic `import()` to reach Node built-ins; the `Bun` global, `fetch`, and the usual Node/Web globals are all available. Calling `evolve` again with an existing name replaces that tool, so the model can improve and/or fix existing tools.
+The `code` is the body of an `async (input) => { ... }` function that must return a string. Because it runs inside that function, tools use dynamic `import()` to reach Node built-ins; the `Bun` global, `fetch`, and the usual Node/Web globals are all available.
+
+Calling `evolve` again with an existing name replaces that tool, so the model can improve and/or fix existing tools. The model doesn't carry tool code between sessions, so `inspect` returns the file from disk to read before rewriting.
 
 ## Tech Stack
 

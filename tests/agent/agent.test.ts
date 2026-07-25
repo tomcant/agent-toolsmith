@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { Agent } from "#/agent";
 import { Session } from "#/agent/session.ts";
 import { evolve } from "#/agent/tools/builtins/evolve.ts";
+import { inspect } from "#/agent/tools/builtins/inspect.ts";
 import { ToolRegistry } from "#/agent/tools/registry.ts";
 import { ToolStore } from "#/agent/tools/store.ts";
 import { LlmClientSpy } from "../doubles/llm-client-spy.ts";
@@ -501,11 +502,13 @@ describe("agent turns", () => {
     ]);
   });
 
-  test("the evolve tool is hidden from the listed tools", () => {
-    registry.register(evolve(registry));
+  test("builtin tools are hidden from the listed tools", () => {
+    registry.register(evolve(registry), { builtin: true });
+    registry.register(inspect(registry), { builtin: true });
+    registry.register(makeTool("evolved-tool"));
     const agent = new Agent(new LlmClientSpy([]), registry, session);
 
-    expect(agent.listTools().map((t) => t.name)).toEqual([]);
+    expect(agent.listTools().map((t) => t.name)).toEqual(["evolved-tool"]);
   });
 
   test("model info surfaces the client's provider and model", () => {

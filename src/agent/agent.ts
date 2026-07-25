@@ -24,7 +24,7 @@ export class Agent {
   }
 
   listTools(): ToolMetadata[] {
-    return this.toolMetadata().filter((tool) => tool.name !== "evolve");
+    return this.toolMetadata().filter((tool) => !this.registry.isBuiltin(tool.name));
   }
 
   async removeTool(name: string): Promise<void> {

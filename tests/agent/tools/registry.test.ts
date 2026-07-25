@@ -45,6 +45,15 @@ describe("tool registration and lifecycle", () => {
     expect(result).toBeUndefined();
   });
 
+  test("builtin status reflects how a tool was registered", () => {
+    registry.register(makeTool("evolved-tool"));
+    registry.register(makeTool("builtin-tool"), { builtin: true });
+
+    expect(registry.isBuiltin("evolved-tool")).toBe(false);
+    expect(registry.isBuiltin("builtin-tool")).toBe(true);
+    expect(registry.isBuiltin("missing")).toBe(false);
+  });
+
   test("registering a builtin replaces an existing tool of the same name", async () => {
     registry.register(makeTool("tool-name", { description: "from disk" }));
     registry.register(makeTool("tool-name", { description: "from builtin" }), { builtin: true });
@@ -122,6 +131,24 @@ describe("tool registration and lifecycle", () => {
     await expect(registry.add(brokenToolInput)).rejects.toThrow();
 
     expect(await registry.get("tool-name")?.execute({})).toBe("good");
+  });
+
+  test("an added tool's source can be read", async () => {
+    await registry.add(makeAddToolInput("tool-name", { code: 'return "x";' }));
+
+    const source = await registry.source("tool-name");
+
+    expect(source).toContain('return "x";');
+  });
+
+  test("reading the source of an unknown tool is rejected", async () => {
+    await expect(registry.source("missing")).rejects.toThrow("Unknown tool: missing");
+  });
+
+  test("reading the source of a builtin tool is rejected", async () => {
+    registry.register(makeTool("tool-name"), { builtin: true });
+
+    await expect(registry.source("tool-name")).rejects.toThrow("builtin");
   });
 
   test("tools can be removed", async () => {
