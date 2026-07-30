@@ -14,7 +14,7 @@ type CreateAgentOptions = {
 };
 
 export async function createAgent(
-  llmClient: LlmClient,
+  llmClient: LlmClient | null,
   options: CreateAgentOptions = {},
 ): Promise<Agent> {
   const toolDir = await createToolDir(options.toolDir);

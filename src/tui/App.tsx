@@ -3,9 +3,10 @@ import { defaultTheme, extendTheme, Spinner, TextInput, ThemeProvider } from "@i
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { ScrollView, type ScrollViewRef } from "ink-scroll-view";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import type { Agent } from "#/agent";
+import type { Agent, ModelInfo } from "#/agent";
 import { isLightScheme } from "./color-scheme.ts";
 import { type Command, parseCommand } from "./commands.ts";
+import { ApiKeyPrompt } from "./components/ApiKeyPrompt.tsx";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
 import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
@@ -37,9 +38,10 @@ type OverlayState = {
 
 type AppProps = {
   agent: Agent;
+  attachApiKey: (apiKey: string) => ModelInfo | null;
 };
 
-export function App({ agent }: AppProps) {
+export function App({ agent, attachApiKey }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [rows, setRows] = useState(stdout?.rows ?? 24);
@@ -50,6 +52,11 @@ export function App({ agent }: AppProps) {
   const [overlay, setOverlay] = useState<OverlayState | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [working, setWorking] = useState(false);
+
+  const [modelInfo, setModelInfo] = useState(agent.modelInfo());
+  const [apiKeyError, setApiKeyError] = useState<string>();
+  const [apiKeyAttempt, setApiKeyAttempt] = useState(0);
+  const needsApiKey = modelInfo === null;
 
   const scrollRef = useRef<ScrollViewRef>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -126,11 +133,13 @@ export function App({ agent }: AppProps) {
       case "tools_list":
         setOverlay(toolsOverlay());
         return;
+
       case "tools_remove":
         await agent.removeTool(command.name);
         appendSystemMessage(`Removed tool '${command.name}'`);
         setOverlay((prev) => (prev?.kind === "tools" ? toolsOverlay() : prev));
         return;
+
       case "clear":
         await agent.clear();
         setTranscript([]);
@@ -138,10 +147,25 @@ export function App({ agent }: AppProps) {
         setOverlay(null);
         setElapsedMs(null);
         return;
+
       case "exit":
         exit();
         return;
     }
+  };
+
+  const handleApiKeySubmit = (value: string) => {
+    const apiKey = value.trim();
+    if (apiKey === "") return;
+
+    const modelInfo = attachApiKey(apiKey);
+    if (!modelInfo) {
+      setApiKeyError("Could not initialise an LLM client from that key.");
+      setApiKeyAttempt((attempt) => attempt + 1);
+      return;
+    }
+
+    setModelInfo(modelInfo);
   };
 
   const handleSubmit = async (input: string) => {
@@ -208,7 +232,15 @@ export function App({ agent }: AppProps) {
           >
             <Box key="header" flexDirection="column" paddingTop={1} gap={1}>
               <Banner />
-              {showIntro && <IntroMessage />}
+              {needsApiKey ? (
+                <ApiKeyPrompt
+                  key={apiKeyAttempt}
+                  error={apiKeyError}
+                  onSubmit={handleApiKeySubmit}
+                />
+              ) : (
+                showIntro && <IntroMessage />
+              )}
             </Box>
             {transcript.map((item) => (
               <Box key={`${item.kind}-${item.id}`} marginTop={1}>
@@ -248,25 +280,27 @@ export function App({ agent }: AppProps) {
             )}
           </Box>
           {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
-          <Box
-            paddingX={1}
-            borderStyle="round"
-            borderColor={theme.accent}
-            borderDimColor={!isLightScheme()}
-          >
-            <Text color={theme.accent} bold>
-              ❯{" "}
-            </Text>
-            <Box flexGrow={1}>
-              <TextInput
-                key={textInputKey}
-                isDisabled={working}
-                placeholder="Type a message (Ctrl+C or /exit to quit)"
-                onSubmit={handleSubmit}
-              />
+          {!needsApiKey && (
+            <Box
+              paddingX={1}
+              borderStyle="round"
+              borderColor={theme.accent}
+              borderDimColor={!isLightScheme()}
+            >
+              <Text color={theme.accent} bold>
+                ❯{" "}
+              </Text>
+              <Box flexGrow={1}>
+                <TextInput
+                  key={textInputKey}
+                  isDisabled={working}
+                  placeholder="Type a message (Ctrl+C or /exit to quit)"
+                  onSubmit={handleSubmit}
+                />
+              </Box>
             </Box>
-          </Box>
-          <StatusBar {...agent.modelInfo()} />
+          )}
+          {modelInfo && <StatusBar {...modelInfo} />}
         </Box>
       </Box>
     </ThemeProvider>

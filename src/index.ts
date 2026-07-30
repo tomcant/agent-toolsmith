@@ -6,50 +6,22 @@ import { createDemoAgent } from "./demo";
 import systemPrompt from "./prompt.md";
 import { App } from "./tui/App.tsx";
 import { initColorScheme } from "./tui/color-scheme.ts";
-import { ApiKeyPrompt } from "./tui/components/ApiKeyPrompt.tsx";
 
 await initColorScheme();
 
 const agent =
   process.env.DEMO === "1"
     ? await createDemoAgent()
-    : await createAgent(await resolveLlmClientInteractive());
+    : await createAgent(resolveLlmClient(systemPrompt));
 
-const { waitUntilExit } = renderFullscreen(createElement(App, { agent }));
+const { waitUntilExit } = renderFullscreen(createElement(App, { agent, attachApiKey }));
 await waitUntilExit();
 
-async function resolveLlmClientInteractive() {
-  const configured = resolveLlmClient(systemPrompt);
-  if (configured) return configured;
-
-  const key = await promptForApiKey();
-  process.env.ANTHROPIC_API_KEY = key;
-
-  const client = resolveLlmClient(systemPrompt);
-  if (client) return client;
-
-  console.error("Error: could not initialise an LLM client from the provided key.");
-  process.exit(1);
-}
-
-function promptForApiKey(): Promise<string> {
-  return new Promise((resolve) => {
-    let submitted = false;
-    const { unmount, waitUntilExit } = renderFullscreen(
-      createElement(ApiKeyPrompt, {
-        onSubmit: (key: string) => {
-          submitted = true;
-          unmount();
-          resolve(key);
-        },
-      }),
-    );
-    void waitUntilExit().then(() => {
-      if (!submitted) {
-        process.exit(0);
-      }
-    });
-  });
+function attachApiKey(apiKey: string) {
+  const client = resolveLlmClient(systemPrompt, { ...process.env, ANTHROPIC_API_KEY: apiKey });
+  if (!client) return null;
+  agent.setClient(client);
+  return agent.modelInfo();
 }
 
 /*

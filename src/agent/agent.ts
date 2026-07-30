@@ -9,13 +9,18 @@ export class Agent {
   private messages: Message[] = [];
 
   constructor(
-    private readonly client: LlmClient,
+    private client: LlmClient | null,
     private readonly registry: ToolRegistry,
     private readonly session: Session,
     private readonly notices: string[] = [],
   ) {}
 
-  modelInfo(): ModelInfo {
+  setClient(client: LlmClient): void {
+    this.client = client;
+  }
+
+  modelInfo(): ModelInfo | null {
+    if (!this.client) return null;
     return { provider: this.client.provider, model: this.client.model };
   }
 
@@ -37,6 +42,10 @@ export class Agent {
   }
 
   async *turn(input: string, signal?: AbortSignal): AsyncGenerator<AgentEvent> {
+    if (!this.client) {
+      throw new Error("No LLM client is configured.");
+    }
+
     const userMessage: Message = {
       role: "user",
       content: [{ type: "text", text: input }],

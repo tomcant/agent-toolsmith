@@ -1,35 +1,22 @@
 import { PasswordInput } from "@inkjs/ui";
 import { Box, Text } from "ink";
-import pkg from "../../../package.json" with { type: "json" };
 import { isLightScheme } from "../color-scheme.ts";
 import { theme } from "../theme.ts";
+import { ErrorMessage } from "./ErrorMessage.tsx";
 
 type ApiKeyPromptProps = {
-  onSubmit: (key: string) => void;
+  error?: string;
+  onSubmit: (apiKey: string) => void;
 };
 
-export function ApiKeyPrompt({ onSubmit }: ApiKeyPromptProps) {
-  const handleSubmit = (value: string) => {
-    const key = value.trim();
-    if (key === "") return;
-    onSubmit(key);
-  };
-
+export function ApiKeyPrompt({ error, onSubmit }: ApiKeyPromptProps) {
   return (
     <Box flexDirection="column" gap={1}>
-      <Box flexDirection="column" paddingX={1} gap={1}>
+      <Box>
         <Text>
-          <Text bold color={theme.accent}>
-            Agent Toolsmith
-          </Text>
-          <Text dimColor> v{pkg.version}</Text>
-        </Text>
-        <Text>
-          <Text dimColor>
-            No LLM provider is configured. Paste an Anthropic API key to continue, or press{" "}
-          </Text>
-          <Text color={theme.accent}>Ctrl+C</Text>
-          <Text dimColor> to quit.</Text>
+          <Text dimColor>No LLM provider is configured. Paste an </Text>
+          <Text color={theme.accent}>Anthropic API key</Text>
+          <Text dimColor> to continue, or press Ctrl+C to quit.</Text>
         </Text>
       </Box>
       <Box
@@ -38,10 +25,9 @@ export function ApiKeyPrompt({ onSubmit }: ApiKeyPromptProps) {
         borderColor={theme.accent}
         borderDimColor={!isLightScheme()}
       >
-        <Box flexGrow={1}>
-          <PasswordInput placeholder="sk-ant-..." onSubmit={handleSubmit} />
-        </Box>
+        <PasswordInput placeholder="sk-ant-..." onSubmit={onSubmit} />
       </Box>
+      {error && <ErrorMessage content={error} />}
     </Box>
   );
 }

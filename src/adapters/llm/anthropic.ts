@@ -6,11 +6,16 @@ export function anthropicFromEnv(
   env: Record<string, string | undefined>,
   systemPrompt?: string,
 ): AnthropicLlmClient | null {
-  if (!env.ANTHROPIC_API_KEY) {
+  const apiKey = env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  // A custom base URL means a proxy or gateway, whose keys use their own format.
+  if (!env.ANTHROPIC_BASE_URL && !apiKey.startsWith("sk-ant-")) {
     return null;
   }
+
   return new AnthropicLlmClient(
-    new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }),
+    new Anthropic({ apiKey }),
     env.MODEL ?? "claude-sonnet-4-6",
     systemPrompt,
   );
