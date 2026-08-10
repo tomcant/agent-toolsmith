@@ -200,4 +200,80 @@ describe("Anthropic LLM client", () => {
       { name: "tool-name", description: "description", input_schema: { type: "object" } },
     ]);
   });
+
+  test("translates message content parts to the SDK's wire format", async () => {
+    const fetch = sseFetchSpy([
+      [
+        {
+          event: "message_start",
+          data: {
+            type: "message_start",
+            message: {
+              id: "msg_1",
+              type: "message",
+              role: "assistant",
+              model: "claude-test-model",
+              content: [],
+              stop_reason: null,
+              stop_sequence: null,
+              usage: { input_tokens: 1, output_tokens: 1 },
+            },
+          },
+        },
+        {
+          event: "content_block_start",
+          data: {
+            type: "content_block_start",
+            index: 0,
+            content_block: { type: "text", text: "" },
+          },
+        },
+        {
+          event: "content_block_stop",
+          data: { type: "content_block_stop", index: 0 },
+        },
+        {
+          event: "message_delta",
+          data: {
+            type: "message_delta",
+            delta: { stop_reason: "end_turn", stop_sequence: null },
+            usage: { output_tokens: 1 },
+          },
+        },
+        {
+          event: "message_stop",
+          data: { type: "message_stop" },
+        },
+      ],
+    ]);
+    const sdk = new Anthropic({ apiKey: "key", fetch });
+    const client = new AnthropicLlmClient(sdk, "claude-test-model");
+
+    await collect(
+      client.send([
+        { role: "user", content: [{ type: "text", text: "User message" }] },
+        {
+          role: "assistant",
+          content: [{ type: "tool_call", id: "t1", name: "tool-name", input: { key: "value" } }],
+        },
+        {
+          role: "user",
+          content: [{ type: "tool_result", toolCallId: "t1", content: "result", isError: true }],
+        },
+      ]),
+    );
+
+    const body = fetch.calls[0]?.body as Record<string, unknown>;
+    expect(body?.messages).toEqual([
+      { role: "user", content: [{ type: "text", text: "User message" }] },
+      {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "t1", name: "tool-name", input: { key: "value" } }],
+      },
+      {
+        role: "user",
+        content: [{ type: "tool_result", tool_use_id: "t1", content: "result", is_error: true }],
+      },
+    ]);
+  });
 });

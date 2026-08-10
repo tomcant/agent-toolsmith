@@ -5,6 +5,7 @@ const validMetadata = {
   name: "tool-name",
   description: "description",
   inputSchema: { type: "object" },
+  outputFormat: "text",
 };
 
 const validTool = {
@@ -36,6 +37,24 @@ describe("validating tool metadata", () => {
     expect(() => validateMetadata({ ...validMetadata, inputSchema: { type: "string" } })).toThrow(
       "inputSchema",
     );
+  });
+
+  test("a known outputFormat is accepted", () => {
+    expect(() => validateMetadata({ ...validMetadata, outputFormat: "text" })).not.toThrow();
+    expect(() => validateMetadata({ ...validMetadata, outputFormat: "markdown" })).not.toThrow();
+  });
+
+  test("an unknown outputFormat is rejected", () => {
+    expect(() => validateMetadata({ ...validMetadata, outputFormat: "html" })).toThrow(
+      "outputFormat",
+    );
+    expect(() => validateMetadata({ ...validMetadata, outputFormat: 1 })).toThrow("outputFormat");
+  });
+
+  test("a missing outputFormat is rejected", () => {
+    const { outputFormat, ...withoutFormat } = validMetadata;
+
+    expect(() => validateMetadata(withoutFormat)).toThrow("outputFormat");
   });
 });
 

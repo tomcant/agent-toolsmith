@@ -84,7 +84,13 @@ describe("agent turns", () => {
     expect(events).toEqual([
       { type: "text", text: "Reply 1" },
       { type: "tool_call", id: "t1", name: "tool-name", input: { key: "value" } },
-      { type: "tool_result", tool_call_id: "t1", content: "result", is_error: false },
+      {
+        type: "tool_result",
+        toolCallId: "t1",
+        content: "result",
+        isError: false,
+        outputFormat: "text",
+      },
       { type: "text", text: "Reply 2" },
     ]);
     expect(inputsReceivedByTool).toEqual([{ key: "value" }]);
@@ -105,7 +111,7 @@ describe("agent turns", () => {
       },
       {
         role: "user",
-        content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
+        content: [{ type: "tool_result", toolCallId: "t1", content: "result", isError: false }],
       },
     ]);
   });
@@ -142,15 +148,58 @@ describe("agent turns", () => {
     expect(events).toEqual([
       { type: "tool_call", id: "t1", name: "throwing-tool", input: {} },
       { type: "tool_call", id: "t2", name: "missing", input: {} },
-      { type: "tool_result", tool_call_id: "t1", content: "error", is_error: true },
       {
         type: "tool_result",
-        tool_call_id: "t2",
+        toolCallId: "t1",
+        content: "error",
+        isError: true,
+        outputFormat: "text",
+      },
+      {
+        type: "tool_result",
+        toolCallId: "t2",
         content: "Unknown tool: missing",
-        is_error: true,
+        isError: true,
       },
       { type: "text", text: "Reply" },
     ]);
+  });
+
+  test("a tool's output format is emitted with its result but withheld from the model", async () => {
+    const llm = new LlmClientSpy([
+      [
+        { type: "tool_call", id: "t1", name: "markdown-tool", input: {} },
+        {
+          type: "complete",
+          response: [{ type: "tool_call", id: "t1", name: "markdown-tool", input: {} }],
+        },
+      ],
+      [
+        { type: "text_delta", text: "Reply" },
+        { type: "complete", response: [{ type: "text", text: "Reply" }] },
+      ],
+    ]);
+    registry.register(
+      makeTool("markdown-tool", {
+        outputFormat: "markdown",
+        execute: async () => "| a | b |",
+      }),
+    );
+    const agent = new Agent(llm, registry, session);
+
+    const events = await collect(agent.turn("User message"));
+
+    expect(events).toContainEqual({
+      type: "tool_result",
+      toolCallId: "t1",
+      content: "| a | b |",
+      isError: false,
+      outputFormat: "markdown",
+    });
+    expect(llm.calls[1]?.messages.at(-1)).toEqual({
+      role: "user",
+      content: [{ type: "tool_result", toolCallId: "t1", content: "| a | b |", isError: false }],
+    });
   });
 
   test("tools registered mid-turn are immediately available", async () => {
@@ -224,7 +273,7 @@ describe("agent turns", () => {
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",
-        content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
+        content: [{ type: "tool_result", toolCallId: "t1", content: "result", isError: false }],
       },
       {
         time: "2026-04-22T12:00:00.000Z",
@@ -373,7 +422,13 @@ describe("agent turns", () => {
     expect(events).toEqual([
       { type: "tool_call", id: "t1", name: "abort-tool", input: {} },
       { type: "tool_call", id: "t2", name: "other-tool", input: {} },
-      { type: "tool_result", tool_call_id: "t1", content: "aborted", is_error: false },
+      {
+        type: "tool_result",
+        toolCallId: "t1",
+        content: "aborted",
+        isError: false,
+        outputFormat: "text",
+      },
     ]);
     expect(otherToolRan).toBe(false);
     expect(llm.calls).toHaveLength(1);
@@ -450,7 +505,7 @@ describe("agent turns", () => {
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",
-        content: [{ type: "tool_result", tool_call_id: "t1", content: "done", is_error: false }],
+        content: [{ type: "tool_result", toolCallId: "t1", content: "done", isError: false }],
       },
       { time: "2026-04-22T12:00:00.000Z", kind: "aborted" },
     ]);
@@ -497,8 +552,8 @@ describe("agent turns", () => {
     const tools = agent.listTools();
 
     expect(tools).toEqual([
-      { name: "t1", description: "first", inputSchema: { type: "object" } },
-      { name: "t2", description: "second", inputSchema: { type: "object" } },
+      { name: "t1", description: "first", inputSchema: { type: "object" }, outputFormat: "text" },
+      { name: "t2", description: "second", inputSchema: { type: "object" }, outputFormat: "text" },
     ]);
   });
 

@@ -77,6 +77,14 @@ describe("tool storage", () => {
     expect(await tool.execute({})).toBe("x");
   });
 
+  test("a tool remembers that it produces markdown across a save and reload", async () => {
+    await store.save(makeAddToolInput("markdown-tool", { outputFormat: "markdown" }));
+
+    const tool = await store.load("markdown-tool");
+
+    expect(tool.outputFormat).toBe("markdown");
+  });
+
   test("a tool's name comes from its filename", async () => {
     await Bun.write(join(toolDir, "from-filename.ts"), makeToolSource());
 

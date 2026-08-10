@@ -1,5 +1,5 @@
 import type { AgentEvent } from "#/agent";
-import type { ToolInput } from "#/agent/tools/types.ts";
+import type { OutputFormat, ToolInput } from "#/agent/tools/types.ts";
 
 export type TranscriptItem =
   | { kind: "user"; id: number; content: string }
@@ -7,12 +7,13 @@ export type TranscriptItem =
   | {
       kind: "tool_call";
       id: number;
-      tool_call_id: string;
+      toolCallId: string;
       name: string;
       input: ToolInput;
       result?: {
         content: string;
-        is_error: boolean;
+        isError: boolean;
+        outputFormat?: OutputFormat;
       };
       aborted?: boolean;
     }
@@ -48,7 +49,7 @@ export function applyAgentEvent(transcript: TranscriptItem[], event: AgentEvent)
         {
           kind: "tool_call",
           id: transcript.length,
-          tool_call_id: event.id,
+          toolCallId: event.id,
           name: event.name,
           input: event.input,
         },
@@ -56,7 +57,7 @@ export function applyAgentEvent(transcript: TranscriptItem[], event: AgentEvent)
 
     case "tool_result": {
       const callIdx = transcript.findIndex(
-        (item) => item.kind === "tool_call" && item.tool_call_id === event.tool_call_id,
+        (item) => item.kind === "tool_call" && item.toolCallId === event.toolCallId,
       );
       if (callIdx === -1) {
         return transcript;
@@ -65,7 +66,11 @@ export function applyAgentEvent(transcript: TranscriptItem[], event: AgentEvent)
         ...transcript.slice(0, callIdx),
         {
           ...(transcript[callIdx] as Extract<TranscriptItem, { kind: "tool_call" }>),
-          result: { content: event.content, is_error: event.is_error },
+          result: {
+            content: event.content,
+            isError: event.isError,
+            outputFormat: event.outputFormat,
+          },
         },
         ...transcript.slice(callIdx + 1),
       ];

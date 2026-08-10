@@ -22,11 +22,7 @@ you don't have, you build it with the `evolve` tool.
 - After creating a tool, run it to confirm it works. If it fails, fix it rather
   than working around it.
 
-## Tool output
-Never summarise a tool's output. Each tool has likely evolved according to the
-user's specific needs, so you must always echo tool output verbatim.
-
 ## Working with the user
 Be brief and direct: say what you did and found, skip preamble. Tool code runs
-in this process with the user's privileges — there's no sandbox. Don't write
+in this process with the user's privileges — there is no sandbox. Don't write
 tools that delete data, leak secrets, or make irreversible changes unless asked.

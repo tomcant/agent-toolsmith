@@ -1,6 +1,6 @@
 import type { ToolRegistry } from "../registry.ts";
 import type { AddToolInput } from "../store.ts";
-import type { Tool } from "../types.ts";
+import { OUTPUT_FORMATS, type Tool } from "../types.ts";
 
 export function evolve(toolRegistry: ToolRegistry): Tool {
   return {
@@ -24,6 +24,12 @@ export function evolve(toolRegistry: ToolRegistry): Tool {
           description:
             "JSON Schema describing the tool's input. Must be an object schema (type: 'object').",
         },
+        outputFormat: {
+          type: "string",
+          enum: OUTPUT_FORMATS,
+          description:
+            "How the output should be rendered. Use 'markdown' when the output is prose, a table, or a list meant for a person to read. Defaults to 'text' — use that for code, logs, file contents, or anything whose exact bytes matter, as markdown rendering would mangle it.",
+        },
         code: {
           type: "string",
           description:
@@ -32,9 +38,10 @@ export function evolve(toolRegistry: ToolRegistry): Tool {
       },
       required: ["name", "description", "inputSchema", "code"],
     },
+    outputFormat: "text",
     execute: async (input) => {
       try {
-        await toolRegistry.add(input as AddToolInput);
+        await toolRegistry.add({ outputFormat: "text", ...input } as AddToolInput);
         return `Evolved tool '${input.name}'`;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

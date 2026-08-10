@@ -28,6 +28,23 @@ describe("builtin evolve tool", () => {
     expect(result).toBe("Evolved tool 'tool-name'");
   });
 
+  test("a tool evolved without an output format produces text", async () => {
+    const tool = evolve(toolRegistry);
+    const { outputFormat, ...withoutFormat } = makeAddToolInput("text-tool");
+
+    await tool.execute(withoutFormat);
+
+    expect(toolRegistry.get("text-tool")?.outputFormat).toBe("text");
+  });
+
+  test("a tool evolved as markdown keeps that format", async () => {
+    const tool = evolve(toolRegistry);
+
+    await tool.execute(makeAddToolInput("markdown-tool", { outputFormat: "markdown" }));
+
+    expect(toolRegistry.get("markdown-tool")?.outputFormat).toBe("markdown");
+  });
+
   test("evolving an existing tool replaces its code", async () => {
     const tool = evolve(toolRegistry);
     await tool.execute(makeAddToolInput("tool-name", { code: 'return "v1";' }));

@@ -12,6 +12,7 @@ const scenarios: Record<string, () => AsyncGenerator<LlmEvent>> = {
   "long-text": longTextScenario,
   markdown: markdownScenario,
   tool: toolScenario,
+  "markdown-tool": markdownToolScenario,
   "multi-tool": multiToolScenario,
   "tool-error": toolErrorScenario,
   error: errorScenario,
@@ -57,6 +58,17 @@ async function* toolScenario(): AsyncGenerator<LlmEvent> {
     id: nextCallId("tool"),
     name: "echo",
     input: { text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit" },
+  };
+  await sleep(EVENT_DELAY_MS);
+  yield { type: "tool_call", ...call };
+  yield complete([{ type: "tool_call", ...call }]);
+}
+
+async function* markdownToolScenario(): AsyncGenerator<LlmEvent> {
+  const call = {
+    id: nextCallId("markdown-tool"),
+    name: "weather",
+    input: { city: "London" },
   };
   await sleep(EVENT_DELAY_MS);
   yield { type: "tool_call", ...call };

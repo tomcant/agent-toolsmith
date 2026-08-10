@@ -117,9 +117,9 @@ function toSdkMessage(message: Message): Anthropic.MessageParam {
       }
       return {
         type: "tool_result",
-        tool_use_id: part.tool_call_id,
+        tool_use_id: part.toolCallId,
         content: part.content,
-        is_error: part.is_error,
+        is_error: part.isError,
       };
     }),
   };

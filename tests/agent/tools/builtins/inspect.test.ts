@@ -29,13 +29,13 @@ describe("builtin inspect tool", () => {
     expect(result).toContain('return "x";');
   });
 
-  test("the result begins with a summary", async () => {
+  test("the whole generated module is returned verbatim", async () => {
     const tool = inspect(toolRegistry);
     await toolRegistry.add(makeAddToolInput("tool-name"));
 
     const result = await tool.execute({ name: "tool-name" });
 
-    expect(result.split("\n")[0]).toMatch(/^Source of 'tool-name' \(\d+ lines\)$/);
+    expect(result).toBe(await Bun.file(join(toolDir, "tool-name.ts")).text());
   });
 
   test("the latest code is returned after a tool is evolved again", async () => {

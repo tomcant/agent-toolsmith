@@ -15,27 +15,15 @@ export function inspect(toolRegistry: ToolRegistry): Tool {
       },
       required: ["name"],
     },
+    outputFormat: "text",
     execute: async (input) => {
       const { name } = input as { name: string };
       try {
-        return render(name, await toolRegistry.source(name));
+        return await toolRegistry.source(name);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return `Error: ${message}`;
       }
     },
   };
-}
-
-function render(name: string, source: string): string {
-  const lineCount = source.trimEnd().split("\n").length;
-
-  return [
-    `Source of '${name}' (${lineCount} lines)`,
-    "",
-    "This is the generated tool module. `evolve`'s `code` parameter is only the body",
-    "of `execute` — send that back when replacing this tool, not the whole module.",
-    "",
-    source,
-  ].join("\n");
 }

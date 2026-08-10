@@ -28,7 +28,7 @@ What makes it self-evolving is the `evolve` tool. When the model needs a capabil
 Task needs a capability the agent lacks
             │
             ▼
-  Agent calls `evolve` { name, description, inputSchema, code }
+  Agent calls `evolve` { name, description, inputSchema, outputFormat?, code }
             │
             ▼
   Code staged to a temp file → imported → validated

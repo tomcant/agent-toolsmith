@@ -3,7 +3,7 @@ import type { ToolRegistry } from "./tools/registry.ts";
 import type { ToolMetadata } from "./tools/types.ts";
 import type { AgentEvent, LlmClient, Message, MessagePart, ModelInfo } from "./types.ts";
 
-type ToolResult = { content: string; is_error: boolean };
+type ToolResult = { content: string; isError: boolean };
 
 export class Agent {
   private messages: Message[] = [];
@@ -134,25 +134,25 @@ export class Agent {
       let result: ToolResult;
 
       if (!tool) {
-        result = { content: `Unknown tool: ${block.name}`, is_error: true };
+        result = { content: `Unknown tool: ${block.name}`, isError: true };
       } else {
         try {
           const content = await tool.execute(block.input);
-          result = { content, is_error: false };
+          result = { content, isError: false };
         } catch (err) {
           const content = err instanceof Error ? err.message : String(err);
-          result = { content, is_error: true };
+          result = { content, isError: true };
         }
       }
 
       const toolResult = {
         type: "tool_result",
-        tool_call_id: block.id,
+        toolCallId: block.id,
         ...result,
       } as const;
 
       toolResults.push(toolResult);
-      yield toolResult;
+      yield { ...toolResult, outputFormat: tool?.outputFormat };
     }
 
     return toolResults;

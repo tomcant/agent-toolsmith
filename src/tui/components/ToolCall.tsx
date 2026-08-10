@@ -1,16 +1,20 @@
 import { Box, Text } from "ink";
-import type { ToolInput } from "#/agent/tools/types.ts";
+import type { OutputFormat, ToolInput } from "#/agent/tools/types.ts";
+import { renderMarkdown } from "../markdown.ts";
 import { theme } from "../theme.ts";
 import { truncate } from "../utils.ts";
 
 type ToolCallProps = {
   name: string;
   input: ToolInput;
-  result?: {
-    content: string;
-    is_error: boolean;
-  };
+  result?: ToolResult;
   aborted?: boolean;
+};
+
+type ToolResult = {
+  content: string;
+  isError: boolean;
+  outputFormat?: OutputFormat;
 };
 
 export function ToolCall({ name, input, result, aborted }: ToolCallProps) {
@@ -24,17 +28,40 @@ export function ToolCall({ name, input, result, aborted }: ToolCallProps) {
         <Text bold>{name}</Text>
         <Text dimColor>({formatInput(input)})</Text>
       </Box>
-      {result ? (
-        <Box paddingLeft={2}>
-          <Text color={result.is_error ? theme.error : undefined} dimColor={!result.is_error}>
-            {summarise(result.content)}
-          </Text>
-        </Box>
-      ) : aborted ? (
-        <Box paddingLeft={2}>
-          <Text dimColor>interrupted</Text>
-        </Box>
-      ) : null}
+      {result || aborted ? <ToolOutput name={name} result={result} color={status.color} /> : null}
+    </Box>
+  );
+}
+
+type ToolOutputProps = {
+  name: string;
+  result?: ToolResult;
+  color: string;
+};
+
+function ToolOutput({ name, result, color }: ToolOutputProps) {
+  const content = result?.content.trimEnd();
+  const outputFormat = result?.isError ? "text" : result?.outputFormat;
+
+  return (
+    <Box
+      borderStyle="single"
+      borderTop={false}
+      borderRight={false}
+      borderBottom={false}
+      borderLeftColor={color}
+      paddingLeft={1}
+    >
+      {content ? (
+        <Text
+          color={result?.isError ? theme.error : undefined}
+          dimColor={!result?.isError && name === "inspect"}
+        >
+          {outputFormat === "markdown" ? renderMarkdown(content) : content}
+        </Text>
+      ) : (
+        <Text dimColor>{result ? "(no output)" : "Interrupted"}</Text>
+      )}
     </Box>
   );
 }
@@ -46,7 +73,7 @@ function getStatus(
   if (!result) {
     return aborted ? { icon: "⊘", color: theme.muted } : { icon: "●", color: theme.running };
   }
-  if (result.is_error) {
+  if (result.isError) {
     return { icon: "✗", color: theme.error };
   }
   return { icon: "●", color: theme.success };
@@ -60,9 +87,4 @@ function formatInput(input: ToolInput, max = 80): string {
 function formatValue(value: unknown, max = 60): string {
   const raw = typeof value === "string" ? value : JSON.stringify(value);
   return truncate(raw.replace(/\s+/g, " ").trim(), max);
-}
-
-function summarise(content: string, max = 100): string {
-  const firstLine = content.split("\n").find((line) => line.trim()) ?? "";
-  return truncate(firstLine, max);
 }

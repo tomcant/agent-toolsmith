@@ -1,5 +1,5 @@
 import { isObject } from "#/utils.ts";
-import type { Tool, ToolMetadata } from "./types.ts";
+import { OUTPUT_FORMATS, type Tool, type ToolMetadata } from "./types.ts";
 
 const NAME_PATTERN = /^[a-z0-9-]{1,64}$/;
 
@@ -16,7 +16,7 @@ export function validateMetadata(metadata: unknown): asserts metadata is ToolMet
     throw new Error("tool must be an object");
   }
 
-  const { name, description, inputSchema } = metadata;
+  const { name, description, inputSchema, outputFormat } = metadata;
 
   if (typeof name !== "string" || !NAME_PATTERN.test(name)) {
     throw new Error("tool name must match ^[a-z0-9-]{1,64}$");
@@ -28,5 +28,9 @@ export function validateMetadata(metadata: unknown): asserts metadata is ToolMet
 
   if (!isObject(inputSchema) || inputSchema.type !== "object") {
     throw new Error("tool inputSchema must be an object schema (type: 'object')");
+  }
+
+  if (!OUTPUT_FORMATS.some((format) => format === outputFormat)) {
+    throw new Error(`tool outputFormat must be one of: ${OUTPUT_FORMATS.join(", ")}`);
   }
 }

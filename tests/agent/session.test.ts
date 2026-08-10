@@ -72,7 +72,7 @@ describe("log", () => {
     });
     await session.log({
       role: "user",
-      content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
+      content: [{ type: "tool_result", toolCallId: "t1", content: "result", isError: false }],
     });
     await session.log({ kind: "error", message: "error" });
 
@@ -93,7 +93,7 @@ describe("log", () => {
       {
         time: "2026-04-22T12:00:00.000Z",
         role: "user",
-        content: [{ type: "tool_result", tool_call_id: "t1", content: "result", is_error: false }],
+        content: [{ type: "tool_result", toolCallId: "t1", content: "result", isError: false }],
       },
       { time: "2026-04-22T12:00:00.000Z", kind: "error", message: "error" },
     ]);

@@ -82,11 +82,12 @@ async function loadTool(filePath: string): Promise<Tool> {
 function renderTool(input: AddToolInput): string {
   const values: Record<string, string> = {
     __DESCRIPTION__: JSON.stringify(input.description),
-    __SCHEMA__: JSON.stringify(input.inputSchema),
+    __INPUT_SCHEMA__: JSON.stringify(input.inputSchema),
+    __OUTPUT_FORMAT__: JSON.stringify(input.outputFormat),
     __CODE__: input.code,
   };
   return template.replace(
-    /__DESCRIPTION__|__SCHEMA__|__CODE__/g,
+    /__DESCRIPTION__|__INPUT_SCHEMA__|__OUTPUT_FORMAT__|__CODE__/g,
     (token) => values[token] ?? token,
   );
 }

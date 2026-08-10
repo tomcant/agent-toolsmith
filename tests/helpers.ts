@@ -6,13 +6,14 @@ export function makeTool(name: string, overrides: Partial<Tool> = {}): Tool {
     name,
     description: "description",
     inputSchema: { type: "object" },
+    outputFormat: "text",
     execute: async () => name,
     ...overrides,
   };
 }
 
 export function makeToolSource(): string {
-  return 'export const tool = { description: "d", inputSchema: { type: "object" }, execute: async () => "x" };';
+  return 'export const tool = { description: "d", inputSchema: { type: "object" }, outputFormat: "text", execute: async () => "x" };';
 }
 
 export function makeAddToolInput(
@@ -23,6 +24,7 @@ export function makeAddToolInput(
     name,
     description: "description",
     inputSchema: { type: "object" },
+    outputFormat: "text",
     code: 'return "";',
     ...overrides,
   };
