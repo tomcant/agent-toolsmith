@@ -1,12 +1,13 @@
-import { Box, Text } from "ink";
 import type { ModelInfo } from "#/agent";
+import { useTheme } from "../theme.ts";
 
 export function StatusBar({ provider, model }: ModelInfo) {
+  const theme = useTheme();
   return (
-    <Box paddingX={1}>
-      <Text dimColor>
+    <box style={{ paddingX: 1 }}>
+      <text fg={theme.muted}>
         {provider} / {model}
-      </Text>
-    </Box>
+      </text>
+    </box>
   );
 }

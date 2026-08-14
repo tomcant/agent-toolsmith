@@ -1,8 +1,8 @@
-import { Box, Text } from "ink";
+import { TextAttributes } from "@opentui/core";
 import type { OutputFormat, ToolInput } from "#/agent/tools/types.ts";
-import { renderMarkdown } from "../markdown.ts";
-import { theme } from "../theme.ts";
+import { type Theme, useTheme } from "../theme.ts";
 import { truncate } from "../utils.ts";
+import { Markdown } from "./Markdown.tsx";
 
 type ToolCallProps = {
   name: string;
@@ -18,18 +18,20 @@ type ToolResult = {
 };
 
 export function ToolCall({ name, input, result, aborted }: ToolCallProps) {
-  const status = getStatus(result, aborted);
+  const theme = useTheme();
+  const status = getStatus(theme, result, aborted);
+
   return (
-    <Box flexDirection="column" paddingLeft={2}>
-      <Box>
-        <Text color={status.color} bold>
+    <box style={{ paddingLeft: 2 }}>
+      <box style={{ flexDirection: "row" }}>
+        <text fg={status.color} attributes={TextAttributes.BOLD}>
           {status.icon}{" "}
-        </Text>
-        <Text bold>{name}</Text>
-        <Text dimColor>({formatInput(input)})</Text>
-      </Box>
+        </text>
+        <text attributes={TextAttributes.BOLD}>{name}</text>
+        <text fg={theme.muted}>({formatInput(input)})</text>
+      </box>
       {result || aborted ? <ToolOutput name={name} result={result} color={status.color} /> : null}
-    </Box>
+    </box>
   );
 }
 
@@ -40,33 +42,43 @@ type ToolOutputProps = {
 };
 
 function ToolOutput({ name, result, color }: ToolOutputProps) {
+  const theme = useTheme();
   const content = result?.content.trimEnd();
-  const outputFormat = result?.isError ? "text" : result?.outputFormat;
 
   return (
-    <Box
-      borderStyle="single"
-      borderTop={false}
-      borderRight={false}
-      borderBottom={false}
-      borderLeftColor={color}
-      paddingLeft={1}
-    >
+    <box style={{ paddingLeft: 1, border: ["left"], borderColor: color }}>
       {content ? (
-        <Text
-          color={result?.isError ? theme.error : undefined}
-          dimColor={!result?.isError && name === "inspect"}
-        >
-          {outputFormat === "markdown" ? renderMarkdown(content) : content}
-        </Text>
+        <ToolOutputBody name={name} content={content} result={result} />
       ) : (
-        <Text dimColor>{result ? "(no output)" : "Interrupted"}</Text>
+        <text fg={theme.muted}>{result ? "(no output)" : "Interrupted"}</text>
       )}
-    </Box>
+    </box>
   );
 }
 
+type ToolOutputBodyProps = {
+  name: string;
+  content: string;
+  result?: ToolResult;
+};
+
+function ToolOutputBody({ name, content, result }: ToolOutputBodyProps) {
+  const theme = useTheme();
+
+  if (result?.isError) {
+    return <text fg={theme.error}>{content}</text>;
+  }
+  if (result?.outputFormat === "markdown") {
+    return <Markdown content={content} />;
+  }
+  if (name === "inspect") {
+    return <Markdown content={`\`\`\`typescript\n${content}\n\`\`\``} />;
+  }
+  return <text fg={theme.foreground}>{content}</text>;
+}
+
 function getStatus(
+  theme: Theme,
   result: ToolCallProps["result"],
   aborted?: boolean,
 ): { icon: string; color: string } {

@@ -1,19 +1,19 @@
-import { Box, Text } from "ink";
-import { theme } from "../theme.ts";
+import { useTheme } from "../theme.ts";
 
 type UserMessageProps = {
   content: string;
 };
 
 export function UserMessage({ content }: UserMessageProps) {
+  const theme = useTheme();
   return (
-    <Box>
-      <Box flexShrink={0}>
-        <Text color={theme.accent}>{"> "}</Text>
-      </Box>
-      <Box flexGrow={1}>
-        <Text backgroundColor={theme.userMessageBg}>{content}</Text>
-      </Box>
-    </Box>
+    <box style={{ flexDirection: "row" }}>
+      <box style={{ flexShrink: 0 }}>
+        <text fg={theme.accent}>{"> "}</text>
+      </box>
+      <box style={{ flexGrow: 1 }}>
+        <text bg={theme.userMessageBg}>{content}</text>
+      </box>
+    </box>
   );
 }

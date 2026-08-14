@@ -1,17 +1,13 @@
-import { Box, Text } from "ink";
-import { theme } from "../theme.ts";
+import { useTheme } from "../theme.ts";
 
 export function IntroMessage() {
+  const theme = useTheme();
   return (
-    <Box>
-      <Text>
-        <Text dimColor>Use </Text>
-        <Text color={theme.accent}>/tools</Text>
-        <Text dimColor>
-          {" "}
-          to list the available tools, or start a conversation to build and use new ones.
-        </Text>
-      </Text>
-    </Box>
+    <box>
+      <text fg={theme.muted}>
+        Use <span fg={theme.accent}>/tools</span> to list the available tools, or start a
+        conversation to build and use new ones.
+      </text>
+    </box>
   );
 }

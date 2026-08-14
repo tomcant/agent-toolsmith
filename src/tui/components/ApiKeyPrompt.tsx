@@ -1,7 +1,5 @@
-import { PasswordInput } from "@inkjs/ui";
-import { Box, Text } from "ink";
-import { isLightScheme } from "../color-scheme.ts";
-import { theme } from "../theme.ts";
+import { TextAttributes } from "@opentui/core";
+import { useTheme } from "../theme.ts";
 import { ErrorMessage } from "./ErrorMessage.tsx";
 
 type ApiKeyPromptProps = {
@@ -10,24 +8,35 @@ type ApiKeyPromptProps = {
 };
 
 export function ApiKeyPrompt({ error, onSubmit }: ApiKeyPromptProps) {
+  const theme = useTheme();
   return (
-    <Box flexDirection="column" gap={1}>
-      <Box>
-        <Text>
-          <Text dimColor>No LLM provider is configured. Paste an </Text>
-          <Text color={theme.accent}>Anthropic API key</Text>
-          <Text dimColor> to continue, or press Ctrl+C to quit.</Text>
-        </Text>
-      </Box>
-      <Box
-        paddingX={1}
-        borderStyle="round"
-        borderColor={theme.accent}
-        borderDimColor={!isLightScheme()}
+    <box style={{ gap: 1 }}>
+      <box>
+        <text fg={theme.muted}>
+          No LLM provider is configured. Paste an <span fg={theme.accent}>Anthropic API key</span>{" "}
+          to continue, or press Ctrl+C to quit.
+        </text>
+      </box>
+      <box
+        style={{
+          flexDirection: "row",
+          paddingX: 1,
+          border: true,
+          borderStyle: "rounded",
+          borderColor: theme.accent,
+        }}
       >
-        <PasswordInput placeholder="sk-ant-..." onSubmit={onSubmit} />
-      </Box>
+        <input
+          focused
+          attributes={TextAttributes.HIDDEN}
+          placeholder="sk-ant-..."
+          placeholderColor={theme.muted}
+          cursorColor={theme.foreground}
+          onSubmit={(input) => onSubmit(input as string)}
+          style={{ flexGrow: 1 }}
+        />
+      </box>
       {error && <ErrorMessage content={error} />}
-    </Box>
+    </box>
   );
 }

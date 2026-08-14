@@ -1,21 +1,22 @@
-import { Box, Text } from "ink";
-import { theme } from "../theme.ts";
+import { TextAttributes } from "@opentui/core";
+import { useTheme } from "../theme.ts";
 
 type ErrorMessageProps = {
   content: string;
 };
 
 export function ErrorMessage({ content }: ErrorMessageProps) {
+  const theme = useTheme();
   return (
-    <Box>
-      <Box flexShrink={0}>
-        <Text color={theme.error} bold>
+    <box style={{ flexDirection: "row" }}>
+      <box style={{ flexShrink: 0 }}>
+        <text fg={theme.error} attributes={TextAttributes.BOLD}>
           {"✗ "}
-        </Text>
-      </Box>
-      <Box flexGrow={1}>
-        <Text color={theme.error}>{content}</Text>
-      </Box>
-    </Box>
+        </text>
+      </box>
+      <box style={{ flexGrow: 1 }}>
+        <text fg={theme.error}>{content}</text>
+      </box>
+    </box>
   );
 }

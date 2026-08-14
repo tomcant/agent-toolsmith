@@ -1,32 +1,34 @@
-import { Box, Text } from "ink";
+import { TextAttributes } from "@opentui/core";
 import type { ToolMetadata } from "#/agent/tools/types.ts";
 import { toolListRows } from "../commands.ts";
+import { useTheme } from "../theme.ts";
 
 type ToolListProps = {
   tools: ToolMetadata[];
 };
 
 export function ToolList({ tools }: ToolListProps) {
+  const theme = useTheme();
   const rows = toolListRows(tools);
 
   if (rows.length === 0) {
-    return <Text dimColor>No tools available.</Text>;
+    return <text fg={theme.muted}>No tools available.</text>;
   }
 
   return (
-    <Box flexDirection="column">
+    <box>
       {rows.map((row) => (
-        <Box key={row.name}>
-          <Box flexShrink={0} marginRight={2}>
-            <Text bold>{row.name}</Text>
-          </Box>
-          <Box flexGrow={1}>
-            <Text dimColor wrap="truncate-end">
+        <box key={row.name} style={{ flexDirection: "row" }}>
+          <box style={{ flexShrink: 0, marginRight: 2 }}>
+            <text attributes={TextAttributes.BOLD}>{row.name}</text>
+          </box>
+          <box style={{ flexGrow: 1 }}>
+            <text fg={theme.muted} wrapMode="none" truncate>
               {row.description}
-            </Text>
-          </Box>
-        </Box>
+            </text>
+          </box>
+        </box>
       ))}
-    </Box>
+    </box>
   );
 }
