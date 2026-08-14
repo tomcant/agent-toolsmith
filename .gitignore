@@ -1,5 +1,5 @@
 # compiled binary
-/agent
+/toolsmith
 
 # dependencies (bun install)
 node_modules

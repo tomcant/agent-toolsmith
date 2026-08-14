@@ -1,19 +1,19 @@
-import { Box, Text } from "ink";
-import { theme } from "../theme.ts";
+import { useTheme } from "../theme.ts";
 
 type SystemMessageProps = {
   content: string;
 };
 
 export function SystemMessage({ content }: SystemMessageProps) {
+  const theme = useTheme();
   return (
-    <Box>
-      <Box flexShrink={0}>
-        <Text color={theme.muted}>{"⏺ "}</Text>
-      </Box>
-      <Box flexGrow={1}>
-        <Text color={theme.muted}>{content}</Text>
-      </Box>
-    </Box>
+    <box style={{ flexDirection: "row" }}>
+      <box style={{ flexShrink: 0 }}>
+        <text fg={theme.muted}>{"⏺ "}</text>
+      </box>
+      <box style={{ flexGrow: 1 }}>
+        <text fg={theme.muted}>{content}</text>
+      </box>
+    </box>
   );
 }

@@ -1,15 +1,14 @@
-<p align="center">
-  <img src="logo.svg" alt="Agent Toolsmith" width="100%">
-</p>
+<div align="center">
+  <img width="50%" alt="Agent Toolsmith logo" src="./logo.svg" />
+  <h4>A general-purpose AI agent that writes its own tools</h4>
+</div>
 
-# Agent Toolsmith
+---
 
-A general-purpose AI agent that writes its own tools.
-
-It starts with two built-in tools — `evolve` to write a tool and `inspect` to read one back — and writes the rest as it needs them. When it hits a task it can't do yet, it writes a new tool, saves it to disk and uses it right away. New tools persist across sessions, so the agent's capabilities grow the more you use it.
+Starting with just two built-ins — `evolve` for writing and `inspect` for reading — when Toolsmith hits a task it can't do yet, it writes a new tool and uses it right away. New tools persist across sessions, so the agent's capabilities grow the more you use it.
 
 > [!CAUTION]
-> This is a personal experiment for didactic purposes only. It's rough around the edges and not battle-tested in any way. Tool code runs in-process with your privileges — there is no sandbox (for now). The system prompt instructs the model not to write tools that delete data, leak secrets, or make irreversible changes unless asked, but of course this cannot be trusted.
+> This is a personal experiment for didactic purposes only. It's rough around the edges and not battle-tested in any way. **Tool code runs in-process with your privileges** — there is no sandbox for now. The system prompt instructs the model not to write tools that delete data, leak secrets, or make irreversible changes unless asked, but of course this cannot be trusted.
 
 ## How It Works
 

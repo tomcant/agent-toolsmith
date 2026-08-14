@@ -1,10 +1,10 @@
-import { Text } from "ink";
-import { renderMarkdown } from "../markdown.ts";
+import { Markdown } from "./Markdown.tsx";
 
 type AssistantMessageProps = {
   content: string;
+  streaming?: boolean;
 };
 
-export function AssistantMessage({ content }: AssistantMessageProps) {
-  return <Text>{renderMarkdown(content)}</Text>;
+export function AssistantMessage({ content, streaming }: AssistantMessageProps) {
+  return <Markdown content={content} streaming={streaming} />;
 }

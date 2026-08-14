@@ -1,10 +1,9 @@
-import { ScrollBar } from "@byteland/ink-scroll-bar";
-import { defaultTheme, extendTheme, Spinner, TextInput, ThemeProvider } from "@inkjs/ui";
-import { Box, Text, useApp, useInput, useStdout } from "ink";
-import { ScrollView, type ScrollViewRef } from "ink-scroll-view";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import type { ScrollBoxRenderable, ThemeMode } from "@opentui/core";
+import { TextAttributes } from "@opentui/core";
+import { useKeyboard, useRenderer } from "@opentui/react";
+import "opentui-spinner/react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Agent, ModelInfo } from "#/agent";
-import { isLightScheme } from "./color-scheme.ts";
 import { type Command, parseCommand } from "./commands.ts";
 import { ApiKeyPrompt } from "./components/ApiKeyPrompt.tsx";
 import { AssistantMessage } from "./components/AssistantMessage.tsx";
@@ -12,23 +11,15 @@ import { Banner } from "./components/Banner.tsx";
 import { ErrorMessage } from "./components/ErrorMessage.tsx";
 import { IntroMessage } from "./components/IntroMessage.tsx";
 import { Overlay } from "./components/Overlay.tsx";
+import { PromptInput } from "./components/PromptInput.tsx";
 import { StatusBar } from "./components/StatusBar.tsx";
 import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { ToolList } from "./components/ToolList.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
-import { theme } from "./theme.ts";
+import { useProportionalScrollbarThumb } from "./scrollbar.ts";
+import { createTheme, ThemeContext } from "./theme.ts";
 import { applyAgentEvent, markAbortedToolCalls, type TranscriptItem } from "./transcript.ts";
-
-const inkUiTheme = extendTheme(defaultTheme, {
-  components: {
-    Spinner: {
-      styles: {
-        frame: () => ({ color: theme.accent }),
-      },
-    },
-  },
-});
 
 type OverlayState = {
   kind: "tools";
@@ -39,14 +30,10 @@ type OverlayState = {
 type AppProps = {
   agent: Agent;
   attachApiKey: (apiKey: string) => ModelInfo | null;
+  themeMode: ThemeMode;
 };
 
-export function App({ agent, attachApiKey }: AppProps) {
-  const { exit } = useApp();
-  const { stdout } = useStdout();
-  const [rows, setRows] = useState(stdout?.rows ?? 24);
-  const abortRef = useRef<AbortController | null>(null);
-  const [textInputKey, setTextInputKey] = useState(0);
+export function App({ agent, attachApiKey, themeMode: initialThemeMode }: AppProps) {
   const [showIntro, setShowIntro] = useState(true);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [overlay, setOverlay] = useState<OverlayState | null>(null);
@@ -58,32 +45,24 @@ export function App({ agent, attachApiKey }: AppProps) {
   const [apiKeyAttempt, setApiKeyAttempt] = useState(0);
   const needsApiKey = modelInfo === null;
 
-  const scrollRef = useRef<ScrollViewRef>(null);
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
-  const stickToBottom = useRef(true);
+  const [themeMode, setThemeMode] = useState(initialThemeMode);
+  const theme = createTheme(themeMode);
+
+  const scrollRef = useRef<ScrollBoxRenderable>(null);
+  useProportionalScrollbarThumb(scrollRef);
+
+  const abortRef = useRef<AbortController>(null);
+  const renderer = useRenderer();
 
   useEffect(() => {
-    if (!stdout) return;
-    const onResize = () => {
-      setRows(stdout.rows ?? 24);
-      scrollRef.current?.remeasure();
-    };
-    stdout.on("resize", onResize);
+    renderer.on("theme_mode", setThemeMode);
     return () => {
-      stdout.off("resize", onResize);
+      renderer.off("theme_mode", setThemeMode);
     };
-  }, [stdout]);
+  }, [renderer]);
 
-  const followOutput = useCallback(() => {
-    if (stickToBottom.current) {
-      scrollRef.current?.scrollToBottom();
-    }
-  }, []);
-
-  useInput((_input, key) => {
-    if (key.escape) {
+  useKeyboard((key) => {
+    if (key.name === "escape") {
       if (overlay) {
         setOverlay(null);
       } else if (working) {
@@ -92,16 +71,10 @@ export function App({ agent, attachApiKey }: AppProps) {
       return;
     }
 
-    if (key.pageUp || key.pageDown) {
-      const view = scrollRef.current;
-      if (!view) return;
-
-      const page = Math.max(1, view.getViewportHeight() - 1);
-      const offset = view.getScrollOffset();
-      const bottom = view.getBottomOffset();
-      const next = key.pageUp ? Math.max(0, offset - page) : Math.min(bottom, offset + page);
-      stickToBottom.current = next >= bottom;
-      view.scrollTo(next);
+    if (key.name === "pageup") {
+      scrollRef.current?.scrollBy(-1, "viewport");
+    } else if (key.name === "pagedown") {
+      scrollRef.current?.scrollBy(1, "viewport");
     }
   });
 
@@ -149,8 +122,7 @@ export function App({ agent, attachApiKey }: AppProps) {
         return;
 
       case "exit":
-        exit();
-        return;
+        renderer.destroy();
     }
   };
 
@@ -169,9 +141,6 @@ export function App({ agent, attachApiKey }: AppProps) {
   };
 
   const handleSubmit = async (input: string) => {
-    if (input.trim() === "") return;
-    setTextInputKey((k) => k + 1);
-
     try {
       const command = parseCommand(input);
       if (command) {
@@ -183,7 +152,6 @@ export function App({ agent, attachApiKey }: AppProps) {
       return;
     }
 
-    stickToBottom.current = true;
     setTranscript((prev) => [...prev, { kind: "user", id: prev.length, content: input }]);
     setShowIntro(false);
     setOverlay(null);
@@ -213,106 +181,62 @@ export function App({ agent, attachApiKey }: AppProps) {
   };
 
   return (
-    <ThemeProvider theme={inkUiTheme}>
-      <Box flexDirection="column" height={rows}>
-        <Box flexGrow={1} flexBasis={0}>
-          <ScrollView
-            ref={scrollRef}
-            flexGrow={1}
-            paddingX={1}
-            onScroll={setScrollOffset}
-            onContentHeightChange={(height) => {
-              setContentHeight(height);
-              followOutput();
-            }}
-            onViewportSizeChange={(size) => {
-              setViewportHeight(size.height);
-              followOutput();
-            }}
-          >
-            <Box key="header" flexDirection="column" paddingTop={1} gap={1}>
-              <Banner />
-              {needsApiKey ? (
-                <ApiKeyPrompt
-                  key={apiKeyAttempt}
-                  error={apiKeyError}
-                  onSubmit={handleApiKeySubmit}
-                />
-              ) : (
-                showIntro && <IntroMessage />
-              )}
-            </Box>
-            {transcript.map((item) => (
-              <Box key={`${item.kind}-${item.id}`} marginTop={1}>
-                {renderTranscriptItem(item)}
-              </Box>
-            ))}
-          </ScrollView>
-          <ScrollBar
-            placement="inset"
-            contentHeight={contentHeight}
-            viewportHeight={viewportHeight}
-            scrollOffset={scrollOffset}
-            color={theme.accent}
-            autoHide
-          />
-        </Box>
-        <Box flexDirection="column" paddingTop={1}>
-          <Box paddingX={1}>
-            <Box flexGrow={1}>
-              {working ? (
-                <Box gap={1}>
-                  <Spinner label="Working..." />
-                  <Text dimColor>(esc to interrupt)</Text>
-                </Box>
-              ) : (
-                elapsedMs !== null && (
-                  <Text dimColor italic>
-                    Worked for {formatDuration(elapsedMs)}
-                  </Text>
-                )
-              )}
-            </Box>
-            {contentHeight > viewportHeight && (
-              <Box>
-                <Text dimColor>↑↓ PgUp/PgDn</Text>
-              </Box>
+    <ThemeContext value={theme}>
+      <box style={{ flexGrow: 1 }}>
+        <scrollbox
+          ref={scrollRef}
+          focusable={false}
+          stickyScroll
+          stickyStart="bottom"
+          style={{ flexGrow: 1, paddingX: 1 }}
+          verticalScrollbarOptions={{ marginLeft: 1 }}
+        >
+          <box style={{ paddingTop: 1, gap: 1 }}>
+            <Banner />
+            {needsApiKey ? (
+              <ApiKeyPrompt key={apiKeyAttempt} error={apiKeyError} onSubmit={handleApiKeySubmit} />
+            ) : (
+              showIntro && <IntroMessage />
             )}
-          </Box>
+          </box>
+          {transcript.map((item, index) => (
+            <box key={`${item.kind}-${item.id}`} style={{ marginTop: 1 }}>
+              {renderTranscriptItem(item, working && index === transcript.length - 1)}
+            </box>
+          ))}
+        </scrollbox>
+        <box style={{ paddingTop: 1, flexShrink: 0 }}>
+          <box style={{ paddingX: 1 }}>
+            {working ? (
+              <box style={{ flexDirection: "row", gap: 1 }}>
+                <spinner color={theme.accent} />
+                <text fg={theme.foreground}>
+                  Working... <span fg={theme.muted}>(esc to interrupt)</span>
+                </text>
+              </box>
+            ) : (
+              elapsedMs !== null && (
+                <text fg={theme.muted} attributes={TextAttributes.ITALIC}>
+                  Worked for {formatDuration(elapsedMs)}
+                </text>
+              )
+            )}
+          </box>
           {overlay && <Overlay title={overlay.title}>{overlay.content}</Overlay>}
-          {!needsApiKey && (
-            <Box
-              paddingX={1}
-              borderStyle="round"
-              borderColor={theme.accent}
-              borderDimColor={!isLightScheme()}
-            >
-              <Text color={theme.accent} bold>
-                ❯{" "}
-              </Text>
-              <Box flexGrow={1}>
-                <TextInput
-                  key={textInputKey}
-                  isDisabled={working}
-                  placeholder="Type a message (Ctrl+C or /exit to quit)"
-                  onSubmit={handleSubmit}
-                />
-              </Box>
-            </Box>
-          )}
+          {!needsApiKey && <PromptInput canSubmit={!working} onSubmit={handleSubmit} />}
           {modelInfo && <StatusBar {...modelInfo} />}
-        </Box>
-      </Box>
-    </ThemeProvider>
+        </box>
+      </box>
+    </ThemeContext>
   );
 }
 
-function renderTranscriptItem(item: TranscriptItem) {
+function renderTranscriptItem(item: TranscriptItem, streaming: boolean) {
   switch (item.kind) {
     case "user":
       return <UserMessage content={item.content} />;
     case "assistant":
-      return <AssistantMessage content={item.content} />;
+      return <AssistantMessage content={item.content} streaming={streaming} />;
     case "tool_call":
       return (
         <ToolCall name={item.name} input={item.input} result={item.result} aborted={item.aborted} />

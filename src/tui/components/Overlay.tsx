@@ -1,6 +1,6 @@
-import { Box, Text } from "ink";
+import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
-import { theme } from "../theme.ts";
+import { useTheme } from "../theme.ts";
 
 type OverlayProps = {
   title: string;
@@ -8,17 +8,26 @@ type OverlayProps = {
 };
 
 export function Overlay({ title, children }: OverlayProps) {
+  const theme = useTheme();
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor={theme.accent} paddingX={1}>
-      <Box marginBottom={1}>
-        <Text color={theme.accent} bold>
+    <box
+      style={{
+        flexShrink: 0,
+        paddingX: 1,
+        border: true,
+        borderStyle: "rounded",
+        borderColor: theme.accent,
+      }}
+    >
+      <box style={{ marginBottom: 1 }}>
+        <text fg={theme.accent} attributes={TextAttributes.BOLD}>
           {`▌ ${title}`}
-        </Text>
-      </Box>
+        </text>
+      </box>
       {children}
-      <Box marginTop={1}>
-        <Text dimColor>Esc to close</Text>
-      </Box>
-    </Box>
+      <box style={{ marginTop: 1 }}>
+        <text fg={theme.muted}>Esc to close</text>
+      </box>
+    </box>
   );
 }
