@@ -50,7 +50,7 @@ Calling `evolve` again with an existing name replaces that tool, so the model ca
 - TypeScript
 - Bun
 - React 19
-- Ink 7
+- OpenTUI
 
 ## Prerequisites
 
@@ -83,7 +83,7 @@ Compile a self-contained executable (bundles the Bun runtime and all dependencie
 
 ```sh
 bun run build
-./agent
+./toolsmith
 ```
 
 ## Usage
