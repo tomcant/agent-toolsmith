@@ -1,6 +1,6 @@
 import type { TextareaOptions, TextareaRenderable } from "@opentui/core";
 import { TextAttributes } from "@opentui/core";
-import { useTerminalDimensions } from "@opentui/react";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { useRef } from "react";
 import { useTheme } from "../theme.ts";
 
@@ -28,12 +28,46 @@ export function PromptInput({ canSubmit, onSubmit }: PromptInputProps) {
   const inputRef = useRef<TextareaRenderable>(null);
   const { height } = useTerminalDimensions();
 
+  const history = useRef<string[]>([]);
+  const stepsBack = useRef(0);
+  const draft = useRef("");
+
   const handleSubmit = () => {
-    const input = inputRef.current?.plainText ?? "";
-    if (input.trim() === "" || !canSubmit) return;
+    const prompt = inputRef.current?.plainText ?? "";
+    if (prompt.trim() === "" || !canSubmit) return;
+
+    if (history.current.at(-1) !== prompt) {
+      history.current.push(prompt);
+    }
+    stepsBack.current = 0;
+
     inputRef.current?.clear();
-    onSubmit(input);
+    onSubmit(prompt);
   };
+
+  useKeyboard((key) => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    if (key.name !== "up" && key.name !== "down") return;
+    if (key.ctrl || key.meta || key.shift || key.option || key.super) return;
+
+    const up = key.name === "up";
+    const { visualRow } = textarea.visualCursor;
+    if (up ? visualRow > 0 : visualRow < textarea.virtualLineCount - 1) return;
+
+    const next = stepsBack.current + (up ? 1 : -1);
+    if (next < 0 || next > history.current.length) return;
+
+    if (stepsBack.current === 0) {
+      draft.current = textarea.plainText;
+    }
+    stepsBack.current = next;
+
+    textarea.setText(next === 0 ? draft.current : (history.current.at(-next) ?? ""));
+    textarea.gotoBufferEnd();
+    key.preventDefault();
+  });
 
   return (
     <box

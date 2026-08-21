@@ -71,6 +71,16 @@ afterEach(() => {
 });
 ```
 
+### Terminal UI
+
+Components render through OpenTUI's `testRender` from `@opentui/react/test-utils` — driven by mock key input, so tests exercise the real renderable rather than a double.
+
+Assert on the values a callback received rather than reading the rendered frame. Only reach for `captureCharFrame()` where nothing has crossed the boundary to observe.
+
+Frame text wraps at a component's inner width, so `toContain` fails on long strings however correctly they were drawn, and `not.toContain` passes whether or not the text is on screen.
+
+See `tests/tui/prompt-input.test.tsx` as a reference for patterns to follow when testing the terminal UI.
+
 ## Fixtures
 
 Static test data lives in `tests/fixtures/`. Use fixtures for sample inputs that would be noisy inline (e.g. file inputs).
