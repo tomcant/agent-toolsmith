@@ -1,25 +1,31 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ToolInput, ToolMetadata } from "#/agent/tools/types.ts";
 import type { LlmClient, LlmEvent, Message, MessagePart } from "#/agent/types.ts";
+import type { LlmAdapter } from "./types.ts";
 
-export function anthropicFromEnv(
-  env: Record<string, string | undefined>,
-  systemPrompt?: string,
-): AnthropicLlmClient | null {
-  const apiKey = env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+export const anthropicAdapter: LlmAdapter = {
+  matchesApiKey: (apiKey) => apiKey.startsWith("sk-ant-"),
 
-  // A custom base URL means a proxy or gateway, whose keys use their own format.
-  if (!env.ANTHROPIC_BASE_URL && !apiKey.startsWith("sk-ant-")) {
-    return null;
-  }
+  fromApiKey(apiKey, systemPrompt, model) {
+    return new AnthropicLlmClient(
+      new Anthropic({ apiKey }),
+      model ?? "claude-sonnet-4-6",
+      systemPrompt,
+    );
+  },
 
-  return new AnthropicLlmClient(
-    new Anthropic({ apiKey }),
-    env.MODEL ?? "claude-sonnet-4-6",
-    systemPrompt,
-  );
-}
+  tryFromEnv(env, systemPrompt) {
+    const apiKey = env.ANTHROPIC_API_KEY;
+    if (!apiKey) return null;
+
+    // A custom base URL means a proxy or gateway, whose keys use their own format.
+    if (!env.ANTHROPIC_BASE_URL && !this.matchesApiKey(apiKey)) {
+      return null;
+    }
+
+    return this.fromApiKey(apiKey, systemPrompt, env.MODEL);
+  },
+};
 
 export class AnthropicLlmClient implements LlmClient {
   readonly provider = "anthropic";

@@ -24,7 +24,7 @@ This is the repository for Agent Toolsmith, a general-purpose AI agent that writ
 
 Three layers — the **agent core**, a **pluggable LLM adapter**, and the **terminal UI** — held apart by two small interfaces. The agent drives the conversation without knowing which model backs it or how its output is shown: it reaches the model through `LlmClient` and emits a stream of `AgentEvent`s the UI renders. Everything else plugs into one of those two seams.
 
-**`LlmClient`** (`agent/types.ts`) — a single `send(messages, tools, signal)` method returning an async stream of `text_delta`, `tool_call`, and a final `complete` event. To add a provider, write an adapter and list it in `adapters/llm/index.ts`; `resolveLlmClient` picks the first whose environment keys are present.
+**`LlmClient`** (`agent/types.ts`) — a single `send(messages, tools, signal)` method returning an async stream of `text_delta`, `tool_call`, and a final `complete` event. To add a provider, write an `LlmAdapter` (`adapters/llm/types.ts`) and list it in `adapters/llm/index.ts`; `resolveLlmClientFromEnv` picks the first whose environment keys are present, and `resolveLlmClientFromApiKey` picks the one whose `matchesApiKey` recognises a raw key given as input.
 
 **`Tool`** (`agent/tools/types.ts`) — `{ name, description, inputSchema, execute }`. The registry holds tools in memory; the store persists evolved ones to disk as TypeScript and reloads them on launch. `evolve` is itself just a built-in tool that writes to the registry — the same seam every evolved tool flows through.
 
@@ -49,10 +49,12 @@ src/
 │
 ├── adapters/
 │   └── llm/
-│       ├── index.ts         resolveLlmClient() — selects a provider from env keys
-│       └── anthropic.ts     Anthropic implementation of LlmClient
+│       ├── index.ts         Provider selection — from env keys, or from a raw key given as input
+│       ├── types.ts         LlmAdapter — how a provider is discovered and constructed
+│       ├── anthropic.ts     Anthropic implementation of LlmClient
+│       └── openai.ts        OpenAI (Responses API) implementation of LlmClient
 │
-├── tui/                     Ink/React terminal UI — App, components, slash commands, transcript
+├── tui/                     OpenTUI/React terminal UI — App, components, slash commands, transcript
 └── demo/                    Fake LlmClient, sample tools, and scripted scenarios (env DEMO=1)
 ```
 
