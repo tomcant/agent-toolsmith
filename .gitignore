@@ -1,6 +1,9 @@
 # compiled binary
 /toolsmith
 
+# demo recording home
+demo/.home
+
 # dependencies (bun install)
 node_modules
 

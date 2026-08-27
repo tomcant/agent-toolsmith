@@ -1,6 +1,7 @@
 <div align="center">
-  <img width="50%" alt="Agent Toolsmith logo" src="./logo.svg" />
-  <h4>A general-purpose AI agent that writes its own tools</h4>
+  <h1>Agent Toolsmith</h1>
+  <p>A general-purpose AI agent that writes its own tools</p>
+  <img width="800px" alt="Agent Toolsmith demo" src="./demo/demo.gif" />
 </div>
 
 ---
