@@ -13,8 +13,8 @@ export function ApiKeyPrompt({ error, onSubmit }: ApiKeyPromptProps) {
     <box style={{ gap: 1 }}>
       <box>
         <text fg={theme.muted}>
-          No LLM provider is configured. Paste an <span fg={theme.accent}>Anthropic API key</span>{" "}
-          to continue, or press Ctrl+C to quit.
+          No LLM provider is configured. Paste an <span fg={theme.accent}>Anthropic</span> or{" "}
+          <span fg={theme.accent}>OpenAI</span> key to continue.
         </text>
       </box>
       <box
@@ -29,7 +29,7 @@ export function ApiKeyPrompt({ error, onSubmit }: ApiKeyPromptProps) {
         <input
           focused
           attributes={TextAttributes.HIDDEN}
-          placeholder="sk-ant-..."
+          placeholder="sk-ant-... or sk-..."
           placeholderColor={theme.muted}
           cursorColor={theme.foreground}
           onSubmit={(input) => onSubmit(input as string)}

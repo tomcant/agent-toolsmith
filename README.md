@@ -55,7 +55,7 @@ Calling `evolve` again with an existing name replaces that tool, so the model ca
 ## Prerequisites
 
 - [Bun](https://bun.sh) JavaScript runtime
-- [Anthropic](https://platform.claude.com) API key
+- An [Anthropic](https://platform.claude.com) or [OpenAI](https://platform.openai.com) API key
 
 ## Setup
 
@@ -71,11 +71,16 @@ Start an interactive chat:
 bun run src/index.ts
 ```
 
-The agent prompts for your Anthropic API key on launch if it isn't already set. To skip the prompt, set it in your environment beforehand:
+The agent prompts for an API key on launch if no provider is configured. It reads the key's format to
+tell the providers apart, so either an Anthropic or an OpenAI key works. To skip the prompt, set one in
+your environment beforehand:
 
 ```sh
-export ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_API_KEY="sk-ant-..."  # claude-sonnet-4-6 by default
+export OPENAI_API_KEY="sk-..."         # gpt-5-mini by default
 ```
+
+Anthropic is preferred when both are set. `MODEL` overrides the default model for whichever provider resolves.
 
 ### Standalone binary
 
