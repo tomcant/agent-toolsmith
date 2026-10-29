@@ -1,10 +1,10 @@
-import { SyntaxStyle } from "@opentui/core";
+import { type NativeResourceOwner, SyntaxStyle } from "@opentui/core";
 import type { ThemeColors } from "./theme.ts";
 
-export function createSyntaxStyle(theme: ThemeColors): SyntaxStyle {
+export function createSyntaxStyle(theme: ThemeColors, owner: NativeResourceOwner): SyntaxStyle {
   const code = theme.code;
 
-  return SyntaxStyle.fromStyles({
+  const styles = {
     default: { fg: theme.foreground },
 
     "markup.heading.1": { fg: theme.accent, bold: true, underline: true },
@@ -49,5 +49,7 @@ export function createSyntaxStyle(theme: ThemeColors): SyntaxStyle {
 
     operator: { fg: theme.muted },
     punctuation: { fg: theme.muted },
-  });
+  };
+
+  return SyntaxStyle.fromStyles(styles, owner);
 }

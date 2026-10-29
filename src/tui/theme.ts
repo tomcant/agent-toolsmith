@@ -1,4 +1,4 @@
-import type { SyntaxStyle, ThemeMode } from "@opentui/core";
+import type { NativeResourceOwner, SyntaxStyle, ThemeMode } from "@opentui/core";
 import { createContext, useContext } from "react";
 import { createSyntaxStyle } from "./syntax-style.ts";
 
@@ -23,15 +23,20 @@ export type ThemeColors = {
   };
 };
 
-const cache = new Map<ThemeMode, Theme>();
+const cache = new WeakMap<NativeResourceOwner, Map<ThemeMode, Theme>>();
 
-export function createTheme(mode: ThemeMode): Theme {
-  const cached = cache.get(mode);
+export function createTheme(mode: ThemeMode, owner: NativeResourceOwner): Theme {
+  let themes = cache.get(owner);
+  if (!themes) {
+    themes = new Map();
+    cache.set(owner, themes);
+  }
+  const cached = themes.get(mode);
   if (cached) return cached;
 
   const colors = themeColors(mode);
-  const theme = { ...colors, syntax: createSyntaxStyle(colors) };
-  cache.set(mode, theme);
+  const theme = { ...colors, syntax: createSyntaxStyle(colors, owner) };
+  themes.set(mode, theme);
   return theme;
 }
 
