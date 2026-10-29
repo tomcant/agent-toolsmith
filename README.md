@@ -55,7 +55,7 @@ Calling `evolve` again with an existing name replaces that tool, so the model ca
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) JavaScript runtime
+- [Bun](https://bun.sh) 1.3.14 or later
 - An [Anthropic](https://platform.claude.com) or [OpenAI](https://platform.openai.com) API key
 
 ## Setup

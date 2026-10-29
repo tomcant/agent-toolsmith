@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import type { CliRenderer } from "@opentui/core";
+import { useRenderer } from "@opentui/react";
 import { testRender } from "@opentui/react/test-utils";
 import { act } from "react";
 import { PromptInput } from "#/tui/components/PromptInput.tsx";
@@ -14,11 +16,12 @@ type Modifiers = { shift?: boolean; ctrl?: boolean; meta?: boolean; super?: bool
 const terminalWidth = 40;
 const wrappingPrompt = "a".repeat(terminalWidth * 2);
 
-let renderer: { destroy: () => void } | undefined;
+let renderer: CliRenderer | undefined;
 
 afterEach(async () => {
   await act(async () => {
     renderer?.destroy();
+    await renderer?.closed;
   });
   renderer = undefined;
 });
@@ -27,12 +30,16 @@ async function renderPromptInput({ canSubmit = true, kittyKeyboard = false }: Re
   const submitted: string[] = [];
   const onSubmit = (prompt: string) => submitted.push(prompt);
 
-  const setup = await testRender(
-    <ThemeContext value={createTheme("dark")}>
-      <PromptInput canSubmit={canSubmit} onSubmit={onSubmit} />
-    </ThemeContext>,
-    { width: terminalWidth, height: 20, kittyKeyboard },
-  );
+  function Subject() {
+    const renderer = useRenderer();
+    return (
+      <ThemeContext value={createTheme("dark", renderer.nativeScene)}>
+        <PromptInput canSubmit={canSubmit} onSubmit={onSubmit} />
+      </ThemeContext>
+    );
+  }
+
+  const setup = await testRender(<Subject />, { width: terminalWidth, height: 20, kittyKeyboard });
   renderer = setup.renderer;
 
   const { mockInput, flush, captureCharFrame } = setup;

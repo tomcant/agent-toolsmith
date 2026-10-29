@@ -1,7 +1,6 @@
 import type { ScrollBoxRenderable, ThemeMode } from "@opentui/core";
 import { TextAttributes } from "@opentui/core";
 import { useKeyboard, useRenderer } from "@opentui/react";
-import "opentui-spinner/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Agent, ModelInfo } from "#/agent";
 import { type Command, parseCommand } from "./commands.ts";
@@ -12,12 +11,12 @@ import { ErrorMessage } from "./components/ErrorMessage.tsx";
 import { IntroMessage } from "./components/IntroMessage.tsx";
 import { Overlay } from "./components/Overlay.tsx";
 import { PromptInput } from "./components/PromptInput.tsx";
+import { Spinner } from "./components/Spinner.tsx";
 import { StatusBar } from "./components/StatusBar.tsx";
 import { SystemMessage } from "./components/SystemMessage.tsx";
 import { ToolCall } from "./components/ToolCall.tsx";
 import { ToolList } from "./components/ToolList.tsx";
 import { UserMessage } from "./components/UserMessage.tsx";
-import { useProportionalScrollbarThumb } from "./scrollbar.ts";
 import { createTheme, ThemeContext } from "./theme.ts";
 import { applyAgentEvent, markAbortedToolCalls, type TranscriptItem } from "./transcript.ts";
 
@@ -46,13 +45,12 @@ export function App({ agent, attachApiKey, themeMode: initialThemeMode }: AppPro
   const needsApiKey = modelInfo === null;
 
   const [themeMode, setThemeMode] = useState(initialThemeMode);
-  const theme = createTheme(themeMode);
+  const renderer = useRenderer();
+  const theme = createTheme(themeMode, renderer.nativeScene);
 
   const scrollRef = useRef<ScrollBoxRenderable>(null);
-  useProportionalScrollbarThumb(scrollRef);
 
   const abortRef = useRef<AbortController>(null);
-  const renderer = useRenderer();
 
   useEffect(() => {
     renderer.on("theme_mode", setThemeMode);
@@ -123,6 +121,7 @@ export function App({ agent, attachApiKey, themeMode: initialThemeMode }: AppPro
 
       case "exit":
         renderer.destroy();
+        await renderer.closed;
     }
   };
 
@@ -209,7 +208,7 @@ export function App({ agent, attachApiKey, themeMode: initialThemeMode }: AppPro
           <box style={{ paddingX: 1 }}>
             {working ? (
               <box style={{ flexDirection: "row", gap: 1 }}>
-                <spinner color={theme.accent} />
+                <Spinner color={theme.accent} />
                 <text fg={theme.foreground}>
                   Working... <span fg={theme.muted}>(esc to interrupt)</span>
                 </text>
