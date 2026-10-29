@@ -63,4 +63,4 @@ src/
 - **Framework:** Bun's built-in test runner (`bun:test`)
 - **Philosophy:** Classical (Detroit) school — behavior-focused, real objects over mocks, AAA pattern
 
-Always follow the rules and conventions in `docs/TESTING.md` when writing tests.
+Always follow the rules and conventions in `docs/TESTING.md` when writing or reviewing tests. For every new or substantially changed test, include the assessment required by its Test Review section in the review response.

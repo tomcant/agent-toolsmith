@@ -16,6 +16,19 @@ We follow the **classical (Detroit) school** of testing. The unit under test is 
 
 **Focus on behaviours that matter.** We don't chase coverage metrics. Tests exist where they catch real bugs and document real behaviours. Thin glue code is not tested because we'd be testing our mocks, not our code.
 
+## Test Review
+
+Establish the affected capabilities from production callers and documented consumer contracts before examining the tests. A component or library can have its own supported contract. An exported internal helper or a scenario created by a test fixture does not by itself establish a requirement.
+
+Before approving each new or substantially changed test, include the following assessment in the review:
+
+1. **Identify the supported capability.** Trace it to a current application use case or documented consumer contract.
+2. **Explain its unique protection.** If this test were deleted, what meaningful regression could escape?
+3. **Check both directions.** Identify a genuine regression it should reject and a valid implementation change it should tolerate. Explain why the assertions distinguish them.
+4. **Make an explicit decision: keep, revise, or remove.** When the justification is unclear, investigate or recommend removal. Do not preserve a test merely by weakening its assertions.
+
+Justify the test's existence before evaluating its construction. Passing tests, real objects, increased coverage, and failing mutation experiments are supporting evidence; they do not independently establish that a test is worth maintaining.
+
 ## Test Structure
 
 Every test follows **Arrange-Act-Assert** with blank line separation:
